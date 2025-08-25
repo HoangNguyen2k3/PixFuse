@@ -14,7 +14,7 @@ class GameManager(val board: Board){
         val emptyCells = board.getEmptyCells()
         if(emptyCells.isNotEmpty()){
             val (x, y) = emptyCells.random()
-            board.setTile(x,y, if(Random.nextFloat() < 0.9f) 2 else 4) // 90% - 2, 10% - 4
+            board.setTile(y,x, if(Random.nextFloat() < 0.9f) 2 else 4) // 90% - 2, 10% - 4
         }
     }
 
@@ -33,10 +33,10 @@ class GameManager(val board: Board){
             val merged = mergeLine(row)
 
             for (x in 0 until board.size){
-                if(board.getTile(x, y) !=  merged[x]){
+                if(board.getTile(y, x) !=  merged[x]){
                     isMoved = true
                 }
-                board.setTile(x, y, merged[x])
+                board.setTile(y, x, merged[x])
             }
         }
     }
@@ -47,10 +47,10 @@ class GameManager(val board: Board){
             val merged = mergeLine(row).reversed()
 
             for (x in 0 until board.size){
-                if(board.getTile(x, y) !=  merged[x]){
+                if(board.getTile(y, x) !=  merged[x]){
                     isMoved = true
                 }
-                board.setTile(x, y, merged[x])
+                board.setTile(y, x, merged[x])
             }
         }
     }
@@ -62,10 +62,10 @@ class GameManager(val board: Board){
             val merged = mergeLine(col)
 
             for (y in 0 until board.size){
-                if(board.getTile(x, y) != merged[y]){
+                if(board.getTile(y, x) != merged[y]){
                     isMoved = true
                 }
-                board.setTile(x, y, merged[y])
+                board.setTile(y, x, merged[y])
             }
         }
     }
@@ -77,10 +77,10 @@ class GameManager(val board: Board){
             val merged = mergeLine(col).reversed()
 
             for (y in 0 until board.size){
-                if(board.getTile(x, y) != merged[y]){
+                if(board.getTile(y, x) != merged[y]){
                     isMoved = true
                 }
-                board.setTile(x, y, merged[y])
+                board.setTile(y, x, merged[y])
             }
         }
     }
@@ -123,9 +123,9 @@ class GameManager(val board: Board){
         // check con merge duoc ko
         for(y in 0 until board.size){
             for(x in 0 until board.size){
-                val value = board.getTile(x, y)
-                if(x < board.size - 1 && value == board.getTile(x + 1, y)) return false
-                if(y < board.size - 1 && value == board.getTile(x, y+1)) return false
+                val value = board.getTile(y, x)
+                if(x < board.size - 1 && value == board.getTile(y + 1, x)) return false
+                if(y < board.size - 1 && value == board.getTile(y, x+1)) return false
 
             }
         }

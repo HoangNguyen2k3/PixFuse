@@ -14,10 +14,10 @@ class Board (val size: Int){
         tileTextures[2] = Texture("tiles/2.png")
         tileTextures[4] = Texture("tiles/4.png")
         tileTextures[8] = Texture("tiles/8.png")
-        tileTextures[2] = Texture("tiles/16.png")
-        tileTextures[4] = Texture("tiles/32.png")
-        tileTextures[8] = Texture("tiles/64.png")
-        tileTextures[8] = Texture("tiles/128.png")
+        tileTextures[16] = Texture("tiles/16.png")
+        tileTextures[32] = Texture("tiles/32.png")
+        tileTextures[64] = Texture("tiles/64.png")
+        tileTextures[128] = Texture("tiles/128.png")
     }
 
     fun getTile(row: Int, col: Int): Int = grid[row][col]
