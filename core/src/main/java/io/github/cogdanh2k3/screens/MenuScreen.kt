@@ -2,36 +2,51 @@ package io.github.cogdanh2k3.screens
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Screen
+import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
-import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Skin
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
+import com.badlogic.gdx.utils.Timer
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import io.github.cogdanh2k3.Main
 
-class MenuScreen (val game: Main) : Screen {
+class MenuScreen(val game: Main) : Screen {
 
     private val stage = Stage(ScreenViewport())
-    private val skin: Skin
-    private val background: Texture
+    private val skin: Skin = Skin()
+    private val background = Texture("titles/background.png")
+    private val logo = Texture("titles/logo.png")
 
     init {
-        // Tạo background bằng Pixmap
-        background = createGradientBackground()
+        val buttonFont = BitmapFont().apply {
+            data.setScale(2.5f)
+            color = Color.WHITE
+        }
+        skin.add("default-font", buttonFont)
 
-        skin = Skin()
-        val font = BitmapFont()
-        font.data.setScale(1.5f)
-        skin.add("default-font", font)
+        val buttonTexture = createButtonTexture(300, 80, Color(0.2f, 0.2f, 0.4f, 0.8f))
+        val buttonHoverTexture = createButtonTexture(300, 80, Color(0.3f, 0.3f, 0.5f, 0.9f))
+        val buttonPressedTexture = createButtonTexture(300, 80, Color(0.1f, 0.1f, 0.3f, 0.9f))
 
-        // Tạo style cho TextButton
-        val buttonStyle = TextButton.TextButtonStyle()
-        buttonStyle.font = font
+        val buttonStyle = TextButton.TextButtonStyle().apply {
+            font = buttonFont
+            fontColor = Color.WHITE
+            overFontColor = Color(1f, 1f, 0.8f, 1f) // Màu vàng nhạt khi hover
+            downFontColor = Color(0.9f, 0.9f, 0.9f, 1f)
+
+            // Thêm background cho button
+            up = TextureRegionDrawable(buttonTexture)
+            over = TextureRegionDrawable(buttonHoverTexture)
+            down = TextureRegionDrawable(buttonPressedTexture)
+        }
         skin.add("default", buttonStyle)
 
         Gdx.input.inputProcessor = stage
@@ -40,75 +55,58 @@ class MenuScreen (val game: Main) : Screen {
         table.setFillParent(true)
         stage.addActor(table)
 
-        val playButton = TextButton("Play", skin)
-        val exitButton = TextButton("Exit", skin)
+        val playButton = TextButton("PLAY GAME", skin)
+        val settingsButton = TextButton("SETTINGS", skin)
+        val exitButton = TextButton("EXIT", skin)
 
-        playButton.addListener { _ ->
-            game.screen = GameScreen(game)
-            true
-        }
+        playButton.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                Timer.schedule(object : Timer.Task() {
+                    override fun run() {
+                        game.screen = GameScreen(game)
+                    }
+                }, 0.2f)
+            }
+        })
 
-        exitButton.addListener { _ ->
-            Gdx.app.exit()
-            true
-        }
+        settingsButton.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                // TODO: Settings screen
+            }
+        })
 
-        table.add(playButton).pad(10f).row()
-        table.add(exitButton).pad(10f).row()
+        exitButton.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                Timer.schedule(object : Timer.Task() {
+                    override fun run() {
+                        Gdx.app.exit()
+                    }
+                }, 0.2f)
+            }
+        })
+
+        // Layout với kích thước lớn hơn
+        table.add().height(200f).row()
+        table.add(playButton).pad(20f).width(400f).height(100f).row() // Tăng kích thước
+        table.add(settingsButton).pad(20f).width(400f).height(100f).row()
+        table.add(exitButton).pad(20f).width(400f).height(100f).row()
     }
 
-    private fun createGradientBackground(): Texture {
-        val width = 512
-        val height = 512
-        val pixmap = Pixmap(width, height, Pixmap.Format.RGB888)
+    private fun createButtonTexture(width: Int, height: Int, color: Color): Texture {
+        val pixmap = Pixmap(width, height, Pixmap.Format.RGBA8888)
 
-        for (y in 0 until height) {
-            val progress = y.toFloat() / height
+        // Fill background
+        pixmap.setColor(color)
+        pixmap.fill()
 
-            // Màu từ xanh navy (0, 0, 0.5) đến xanh sky (0.5, 0.7, 1)
-            val r = progress * 0.5f
-            val g = progress * 0.7f
-            val b = 0.5f + progress * 0.5f
-
-            pixmap.setColor(r, g, b, 1f)
-            pixmap.drawLine(0, y, width - 1, y)
-        }
+        pixmap.setColor(Color.WHITE)
+        pixmap.drawRectangle(0, 0, width, height)
+        pixmap.drawRectangle(1, 1, width - 2, height - 2)
 
         val texture = Texture(pixmap)
         pixmap.dispose()
         return texture
     }
-
-//    private fun createPatternBackground(): Texture {
-//        val width = 64
-//        val height = 64
-//        val pixmap = Pixmap(width, height, Pixmap.Format.RGB888)
-//
-//        for (x in 0 until width) {
-//            for (y in 0 until height) {
-//                val isEven = (x / 8 + y / 8) % 2 == 0
-//                if (isEven) {
-//                    pixmap.setColor(0.2f, 0.2f, 0.3f, 1f) // Xám đậm
-//                } else {
-//                    pixmap.setColor(0.3f, 0.3f, 0.4f, 1f) // Xám nhạt
-//                }
-//                pixmap.drawPixel(x, y)
-//            }
-//        }
-//
-//        val texture = Texture(pixmap)
-//        pixmap.dispose()
-//        return texture
-//    }
-//
-//    private fun createSolidBackground(color: Color): Texture {
-//        val pixmap = Pixmap(1, 1, Pixmap.Format.RGB888)
-//        pixmap.setColor(color)
-//        pixmap.fill()
-//        val texture = Texture(pixmap)
-//        pixmap.dispose()
-//        return texture
-//    }
 
     override fun show() {}
 
@@ -117,12 +115,14 @@ class MenuScreen (val game: Main) : Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
         game.batch.begin()
-        game.batch.draw(
-            background,
-            0f, 0f,
-            Gdx.graphics.width.toFloat(),
-            Gdx.graphics.height.toFloat()
-        )
+        game.batch.draw(background, 0f, 0f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
+
+        val logoWidth = Gdx.graphics.width * 0.5f
+        val logoHeight = logo.height * (logoWidth / logo.width)
+        val logoX = (Gdx.graphics.width - logoWidth) / 2f
+        val logoY = Gdx.graphics.height - logoHeight - 50f
+        game.batch.draw(logo, logoX, logoY, logoWidth, logoHeight)
+
         game.batch.end()
 
         stage.act(delta)
@@ -134,14 +134,13 @@ class MenuScreen (val game: Main) : Screen {
     }
 
     override fun pause() {}
-
     override fun resume() {}
-
     override fun hide() {}
 
     override fun dispose() {
         stage.dispose()
         skin.dispose()
         background.dispose()
+        logo.dispose()
     }
 }

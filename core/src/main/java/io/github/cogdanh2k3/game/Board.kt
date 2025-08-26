@@ -2,23 +2,27 @@ package io.github.cogdanh2k3.game
 
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 
 class Board (val size: Int){
     private val grid: Array<IntArray> = Array(size){
         IntArray(size){0}
     }
+    private val shapeRenderer = ShapeRenderer()
 
-    private val tileTextures : MutableMap<Int, Texture> = mutableMapOf()
-
-    init {
-        tileTextures[2] = Texture("tiles/2.png")
-        tileTextures[4] = Texture("tiles/4.png")
-        tileTextures[8] = Texture("tiles/8.png")
-        tileTextures[16] = Texture("tiles/16.png")
-        tileTextures[32] = Texture("tiles/32.png")
-        tileTextures[64] = Texture("tiles/64.png")
-        tileTextures[128] = Texture("tiles/128.png")
-    }
+    private val tileImages = mapOf(
+        2 to Texture("titles/pikachu_2.png"),
+        4 to Texture("titles/charmander_4.png"),
+        8 to Texture("titles/bullbasaur_8.png"),
+        16 to Texture("titles/squirtle_16.png"),
+        32 to Texture("titles/eevee_32.png"),
+        64 to Texture("titles/jigglypuff_64.png"),
+        128 to Texture("titles/snorlax_128.png"),
+        256 to Texture("titles/dratini_256.png"),
+        512 to Texture("titles/pidgey_512.png"),
+        1024 to Texture("titles/abra_1024.png"),
+        2048 to Texture("titles/venonat_2048.png"),
+    )
 
     fun getTile(row: Int, col: Int): Int = grid[row][col]
 
@@ -48,25 +52,31 @@ class Board (val size: Int){
 
     fun draw(batch: SpriteBatch){
         val tileSize = 128f
-        val startX = 50f
+        val padding = 15f
+        val boardSize = size * tileSize + (size - 1) * padding
+        val startX = (800 - boardSize) / 2f
         val startY = 100f
 
+        // Ve tung tile
         for(row in 0 until size){
             for (col in 0 until size){
                 val value = grid[row][col]
-                if(value != 0){
-                    val texture = tileTextures[value]
-                    if(texture != null){
-                        val drawX = startX + col * (tileSize + 10)
-                        val drawY = startY + (size - 1 - row) * (tileSize + 10) // bottom -> top
-                        batch.draw(texture, drawX, drawY, tileSize, tileSize)
-                    }
+                if(value == 0) continue
+
+                val drawX = startX + col * (tileSize + padding)
+                val drawY = startY + (size - 1 - row) * (tileSize + padding)
+
+                val image = tileImages[value]
+
+                if(image != null){
+                    batch.draw(image, drawX, drawY, tileSize, tileSize)
                 }
             }
         }
     }
     // Don tai nguyen
     fun dispose(){
-        tileTextures.values.forEach { it.dispose() }
+        tileImages.values.forEach { it.dispose() }
+        shapeRenderer.dispose()
     }
 }
