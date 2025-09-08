@@ -4,11 +4,13 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.ScreenAdapter
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.math.Interpolation
+import com.badlogic.gdx.utils.viewport.FitViewport
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.game.Board
 import io.github.cogdanh2k3.game.GameManager
@@ -16,6 +18,8 @@ import io.github.cogdanh2k3.utils.InputHandler
 
 class GameScreen(val game: Main) : ScreenAdapter() {
 
+    private val camera = OrthographicCamera()
+    private val viewport = FitViewport(800f, 600f, camera) // giữ tỉ lệ 800x600
     private val batch = SpriteBatch()
     private val shapeRenderer = ShapeRenderer()
 
@@ -79,36 +83,52 @@ class GameScreen(val game: Main) : ScreenAdapter() {
         Gdx.gl.glClearColor(bgColor.r, bgColor.g, bgColor.b, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        shapeRenderer.projectionMatrix = batch.projectionMatrix
+        camera.update()
+        batch.projectionMatrix = camera.combined
+        shapeRenderer.projectionMatrix = camera.combined
+
+        // Draw UI
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
         drawScoreBoxes()
+        shapeRenderer.end()
 
         batch.begin()
 
-        titleFont.draw(batch, "2048 Animals", 50f, Gdx.graphics.height - 50f)
+        // Tiêu đề
+        titleFont.draw(batch, "2048 Animals", viewport.worldWidth / 2 - 150f, viewport.worldHeight - 30f)
 
+        // Điểm số
         val scoreScale = if (scoreAnimation > 0f) 1f + scoreAnimation * 0.3f else 1f
         scoreFont.data.setScale(2f * scoreScale)
-        scoreFont.draw(batch, "${displayScore.toInt()}", 520f, Gdx.graphics.height - 80f)
-        scoreFont.draw(batch, "${displayHighScore.toInt()}", 670f, Gdx.graphics.height - 80f)
+        scoreFont.draw(batch, "${displayScore.toInt()}", viewport.worldWidth / 2 - 120f, viewport.worldHeight - 70f)
+        scoreFont.draw(batch, "${displayHighScore.toInt()}", viewport.worldWidth / 2 + 40f, viewport.worldHeight - 70f)
         scoreFont.data.setScale(2f)
 
-        labelFont.draw(batch, "SCORE", 520f, Gdx.graphics.height - 40f)
-        labelFont.draw(batch, "BEST", 670f, Gdx.graphics.height - 40f)
+        labelFont.draw(batch, "SCORE", viewport.worldWidth / 2 - 120f, viewport.worldHeight - 40f)
+        labelFont.draw(batch, "BEST", viewport.worldWidth / 2 + 40f, viewport.worldHeight - 40f)
 
-        labelFont.draw(batch, "HOW TO PLAY: Swipe to move tiles.", 50f, 120f)
-        labelFont.draw(batch, "When two same animals touch, they evolve!", 50f, 90f)
+        // Hướng dẫn
+        labelFont.draw(batch, "HOW TO PLAY: Swipe to move tiles.", 50f, 60f)
+        labelFont.draw(batch, "When two same animals touch, they evolve!", 50f, 35f)
 
+        // Board game ở giữa màn hình
+        board.setPosition(
+            (viewport.worldWidth - board.pixelSize) / 2,
+            (viewport.worldHeight - board.pixelSize) / 2
+        )
         board.draw(batch)
+
         batch.end()
     }
 
     private fun drawScoreBoxes() {
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+        // SCORE
         shapeRenderer.color = Color(0.73f, 0.68f, 0.63f, 0.8f)
-        drawRoundedRect(500f, Gdx.graphics.height - 120f, 140f, 80f, 8f)
+        drawRoundedRect(viewport.worldWidth / 2 - 150f, viewport.worldHeight - 110f, 100f, 70f, 8f)
+
+        // BEST
         shapeRenderer.color = Color(0.73f, 0.68f, 0.63f, 0.8f)
-        drawRoundedRect(650f, Gdx.graphics.height - 120f, 140f, 80f, 8f)
-        shapeRenderer.end()
+        drawRoundedRect(viewport.worldWidth / 2 + 10f, viewport.worldHeight - 110f, 100f, 70f, 8f)
     }
 
     private fun drawRoundedRect(x: Float, y: Float, width: Float, height: Float, radius: Float) {
@@ -133,6 +153,10 @@ class GameScreen(val game: Main) : ScreenAdapter() {
             else -> Triple(c, 0f, x)
         }
         return Color(r + m, g + m, b + m, 1f)
+    }
+
+    override fun resize(width: Int, height: Int) {
+        viewport.update(width, height, true)
     }
 
     override fun pause() {

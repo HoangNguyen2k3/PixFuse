@@ -49,31 +49,56 @@ class Board (val size: Int){
         for (row in 0 until size) column.add(grid[row][col])
         return column
     }
+    var x: Float = 0f
+    var y: Float = 0f
+    var tileSize = 128f
+    var padding = 30f
 
-    fun draw(batch: SpriteBatch){
-        val tileSize = 128f
-        val padding = 15f
-        val boardSize = size * tileSize + (size - 1) * padding
-        val startX = (800 - boardSize) / 2f
-        val startY = 100f
+    val pixelSize: Float
+        get() = size * tileSize + (size - 1) * padding
 
-        // Ve tung tile
-        for(row in 0 until size){
-            for (col in 0 until size){
+    fun setPosition(x: Float, y: Float) {
+        this.x = x
+        this.y = y
+    }
+
+    fun draw(batch: SpriteBatch) {
+        for (row in 0 until size) {
+            for (col in 0 until size) {
                 val value = grid[row][col]
-                if(value == 0) continue
+                if (value == 0) continue
 
-                val drawX = startX + col * (tileSize + padding)
-                val drawY = startY + (size - 1 - row) * (tileSize + padding)
-
-                val image = tileImages[value]
-
-                if(image != null){
-                    batch.draw(image, drawX, drawY, tileSize, tileSize)
-                }
+                val drawX = x + col * (tileSize + padding)
+                val drawY = y + row * (tileSize + padding)   // ✅ vẽ từ dưới lên
+                tileImages[value]?.let { batch.draw(it, drawX, drawY, tileSize, tileSize) }
             }
         }
     }
+
+//    fun draw(batch: SpriteBatch){
+//        val tileSize = 128f
+//        val padding = 15f
+//        val boardSize = size * tileSize + (size - 1) * padding
+//        val startX = (800 - boardSize) / 2f
+//        val startY = 100f
+//
+//        // Ve tung tile
+//        for(row in 0 until size){
+//            for (col in 0 until size){
+//                val value = grid[row][col]
+//                if(value == 0) continue
+//
+//                val drawX = startX + col * (tileSize + padding)
+//                val drawY = startY + (size - 1 - row) * (tileSize + padding)
+//
+//                val image = tileImages[value]
+//
+//                if(image != null){
+//                    batch.draw(image, drawX, drawY, tileSize, tileSize)
+//                }
+//            }
+//        }
+//    }
     // Don tai nguyen
     fun dispose(){
         tileImages.values.forEach { it.dispose() }
