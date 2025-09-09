@@ -1,14 +1,12 @@
 package io.github.cogdanh2k3.game
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import io.github.cogdanh2k3.Animation
 
-class Board (val size: Int){
-    private val grid: Array<IntArray> = Array(size){
-        IntArray(size){0}
-    }
-    private val shapeRenderer = ShapeRenderer()
+class Board(val size: Int) {
+    private val grid: Array<IntArray> = Array(size) { IntArray(size) { 0 } }
 
     private val tileImages = mapOf(
         2 to Texture("titles/pikachu_2.png"),
@@ -24,84 +22,80 @@ class Board (val size: Int){
         2048 to Texture("titles/venonat_2048.png"),
     )
 
-    fun getTile(row: Int, col: Int): Int = grid[row][col]
-
-    fun setTile(row: Int, col: Int, value: Int){
-        grid[row][col] = value
-    }
-
-    fun getEmptyCells(): List<Pair<Int, Int>> {
-        val empty = mutableListOf<Pair<Int, Int>>()
-        for (row in 0 until size){
-            for (col in 0 until size){
-                if(grid[row][col]==0){
-                    empty.add(Pair(row, col))
-                }
-            }
-        }
-        return empty;
-    }
-
-    fun getRow(row: Int): List<Int> = grid[row].toList()
-
-    fun getCol(col: Int): List<Int> {
-        val column = mutableListOf<Int>()
-        for (row in 0 until size) column.add(grid[row][col])
-        return column
-    }
     var x: Float = 0f
     var y: Float = 0f
     var tileSize = 128f
     var padding = 30f
 
-    val pixelSize: Float
-        get() = size * tileSize + (size - 1) * padding
+    private val animations = mutableListOf<Animation>()
+    private val spawnAnimations = mutableListOf<SpawnAnim>()
 
-    fun setPosition(x: Float, y: Float) {
-        this.x = x
-        this.y = y
+    data class SpawnAnim(val value: Int, val row: Int, val col: Int, var time: Float = 0f)
+
+    fun getTile(r: Int, c: Int) = grid[r][c]
+    fun setTile(r: Int, c: Int, v: Int) { grid[r][c] = v }
+
+    fun getEmptyCells(): List<Pair<Int, Int>> {
+        val res = mutableListOf<Pair<Int, Int>>()
+        for (r in 0 until size) for (c in 0 until size) if (grid[r][c] == 0) res.add(r to c)
+        return res
+    }
+
+    private fun gridToPos(row: Int, col: Int): Pair<Float, Float> {
+        val drawX = x + col * (tileSize + padding)
+        val drawY = y + (size - 1 - row) * (tileSize + padding)
+        return drawX to drawY
+    }
+
+    fun addMoveAnim(value: Int, fromR: Int, fromC: Int, toR: Int, toC: Int) {
+        val (sx, sy) = gridToPos(fromR, fromC)
+        val (ex, ey) = gridToPos(toR, toC)
+        animations.add(Animation(value, sx, sy, ex, ey,15f))
+    }
+
+    fun addSpawnAnim(r: Int, c: Int, value: Int) {
+        spawnAnimations.add(SpawnAnim(value, r, c))
     }
 
     fun draw(batch: SpriteBatch) {
-        for (row in 0 until size) {
-            for (col in 0 until size) {
-                val value = grid[row][col]
-                if (value == 0) continue
+        val dt = Gdx.graphics.deltaTime
 
-                val drawX = x + col * (tileSize + padding)
-                val drawY = y + row * (tileSize + padding)   // ✅ vẽ từ dưới lên
-                tileImages[value]?.let { batch.draw(it, drawX, drawY, tileSize, tileSize) }
+        // Vẽ tile gốc
+        for (r in 0 until size) {
+            for (c in 0 until size) {
+                val v = grid[r][c]
+                if (v == 0) continue
+                val (dx, dy) = gridToPos(r, c)
+                tileImages[v]?.let { batch.draw(it, dx, dy, tileSize, tileSize) }
             }
+        }
+
+        // Vẽ animation move
+        val it = animations.iterator()
+        while (it.hasNext()) {
+            val anim = it.next()
+            if (anim.update(dt)) it.remove()
+            val (cx, cy) = anim.getCurrentPos()
+            tileImages[anim.value]?.let { batch.draw(it, cx, cy, tileSize, tileSize) }
+        }
+
+        // Vẽ animation spawn (scale-in)
+        val itSpawn = spawnAnimations.iterator()
+        while (itSpawn.hasNext()) {
+            val s = itSpawn.next()
+            s.time += dt
+            val progress = (s.time / 0.25f).coerceAtMost(1f)
+            val scale = 0.5f + 0.5f * progress
+            val (dx, dy) = gridToPos(s.row, s.col)
+            val offset = tileSize * (1 - scale) / 2
+            tileImages[s.value]?.let {
+                batch.draw(it, dx + offset, dy + offset, tileSize * scale, tileSize * scale)
+            }
+            if (progress >= 1f) itSpawn.remove()
         }
     }
 
-//    fun draw(batch: SpriteBatch){
-//        val tileSize = 128f
-//        val padding = 15f
-//        val boardSize = size * tileSize + (size - 1) * padding
-//        val startX = (800 - boardSize) / 2f
-//        val startY = 100f
-//
-//        // Ve tung tile
-//        for(row in 0 until size){
-//            for (col in 0 until size){
-//                val value = grid[row][col]
-//                if(value == 0) continue
-//
-//                val drawX = startX + col * (tileSize + padding)
-//                val drawY = startY + (size - 1 - row) * (tileSize + padding)
-//
-//                val image = tileImages[value]
-//
-//                if(image != null){
-//                    batch.draw(image, drawX, drawY, tileSize, tileSize)
-//                }
-//            }
-//        }
-//    }
-    // Don tai nguyen
-    fun dispose(){
+    fun dispose() {
         tileImages.values.forEach { it.dispose() }
-        shapeRenderer.dispose()
     }
 }

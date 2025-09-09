@@ -112,10 +112,10 @@ class GameScreen(val game: Main) : ScreenAdapter() {
         labelFont.draw(batch, "When two same animals touch, they evolve!", 50f, 35f)
 
         // Board game ở giữa màn hình
-        board.setPosition(
-            (viewport.worldWidth - board.pixelSize) / 2,
-            (viewport.worldHeight - board.pixelSize) / 2
-        )
+//        board.setPosition(
+//            (viewport.worldWidth - board.pixelSize) / 2,
+//            (viewport.worldHeight - board.pixelSize) / 2
+//        )
         board.draw(batch)
 
         batch.end()

@@ -5,166 +5,131 @@ import kotlin.random.Random
 class GameManager(val board: Board) {
     var score = 0
         private set
-
     var isMoved = false
         private set
-
-    // Spawn tile ngẫu nhiên
+    var hasWon = false
+        private set
+    var hasLost = false
+        private set
     fun spawnTile() {
-        val emptyCells = board.getEmptyCells()
-        if (emptyCells.isNotEmpty()) {
-            val (row, col) = emptyCells.random()
-            board.setTile(row, col, if (Random.nextFloat() < 0.9f) 2 else 4)
+        if (hasWon || hasLost) return
+        val empty = board.getEmptyCells()
+        if (empty.isNotEmpty()) {
+            val (r, c) = empty.random()
+            val value = if (Random.nextFloat() < 0.9f) 2 else 4
+            board.setTile(r, c, value)
+            board.addSpawnAnim(r, c, value)
         }
     }
 
     fun update() {
         if (isMoved) {
             spawnTile()
+            checkWin()
+            checkLose()
             isMoved = false
         }
     }
+    private fun checkWin() {
+        if (hasWon) return
+        for (r in 0 until board.size) {
+            for (c in 0 until board.size) {
+                if (board.getTile(r, c) == 2048) {
+                    hasWon = true
+                    return
+                }
+            }
+        }
+    }
 
-    // ============================= Movement =============================
-    fun moveLeft() {
+    private fun checkLose() {
+        if (hasLost || hasWon) return
+        if (board.getEmptyCells().isNotEmpty()) return
+
+        // không còn ô trống → check merge được nữa không
+        for (r in 0 until board.size) {
+            for (c in 0 until board.size) {
+                val v = board.getTile(r, c)
+                if (r + 1 < board.size && v == board.getTile(r + 1, c)) return
+                if (c + 1 < board.size && v == board.getTile(r, c + 1)) return
+            }
+        }
+        hasLost = true
+    }
+
+    fun moveLeft() = moveRows(reversed = false)
+    fun moveRight() = moveRows(reversed = true)
+    fun moveUp() = moveCols(reversed = false)
+    fun moveDown() = moveCols(reversed = true)
+
+    private fun moveRows(reversed: Boolean) {
         var moved = false
-        for (y in 0 until board.size) {
-            val row = board.getRow(y)
-            val merged = mergeLineLeft(row)
-            for (x in 0 until board.size) {
-                if (board.getTile(y, x) != merged[x]) moved = true
-                board.setTile(y, x, merged[x])
+        for (r in 0 until board.size) {
+            val line = (0 until board.size).map { board.getTile(r, it) }
+            val final = processLine(line, reversed, r, isRow = true)
+            for (c in 0 until board.size) {
+                if (board.getTile(r, c) != final[c]) {
+                    moved = true
+                    board.setTile(r, c, final[c])
+                }
             }
         }
         isMoved = moved
     }
 
-    fun moveRight() {
+    private fun moveCols(reversed: Boolean) {
         var moved = false
-        for (y in 0 until board.size) {
-            val row = board.getRow(y)
-            val merged = mergeLineRight(row)
-            for (x in 0 until board.size) {
-                if (board.getTile(y, x) != merged[x]) moved = true
-                board.setTile(y, x, merged[x])
+        for (c in 0 until board.size) {
+            val line = (0 until board.size).map { board.getTile(it, c) }
+            val final = processLine(line, reversed, c, isRow = false)
+            for (r in 0 until board.size) {
+                if (board.getTile(r, c) != final[r]) {
+                    moved = true
+                    board.setTile(r, c, final[r])
+                }
             }
         }
         isMoved = moved
     }
 
-    fun moveDown() {
-        var moved = false
-        for (x in 0 until board.size) {
-            val col = board.getCol(x)
-            val merged = mergeLineUp(col)
-            for (y in 0 until board.size) {
-                if (board.getTile(y, x) != merged[y]) moved = true
-                board.setTile(y, x, merged[y])
-            }
-        }
-        isMoved = moved
-    }
-
-    fun moveUp() {
-        var moved = false
-        for (x in 0 until board.size) {
-            val col = board.getCol(x)
-            val merged = mergeLineDown(col)
-            for (y in 0 until board.size) {
-                if (board.getTile(y, x) != merged[y]) moved = true
-                board.setTile(y, x, merged[y])
-            }
-        }
-        isMoved = moved
-    }
-
-    // ============================= Merge logic =============================
-
-    // Merge sang trái
-    private fun mergeLineLeft(line: List<Int>): List<Int> {
-        val compact = line.filter { it != 0 }
+    private fun processLine(line: List<Int>, reversed: Boolean, index: Int, isRow: Boolean): List<Int> {
+        val work = if (reversed) line.reversed() else line
+        val compact = work.filter { it != 0 }.toMutableList()
         val merged = mutableListOf<Int>()
         var skip = false
+
         for (i in compact.indices) {
-            if (skip) {
-                skip = false
-                continue
-            }
-            if (i < compact.size - 1 && compact[i] == compact[i + 1]) {
-                val value = compact[i] * 2
-                score += value
-                merged.add(value)
+            if (skip) { skip = false; continue }
+            if (i < compact.lastIndex && compact[i] == compact[i + 1]) {
+                val v = compact[i] * 2
+                score += v
+                merged.add(v)
                 skip = true
             } else {
                 merged.add(compact[i])
             }
         }
         while (merged.size < board.size) merged.add(0)
-        return merged
-    }
 
-    // Merge sang phải
-    private fun mergeLineRight(line: List<Int>): List<Int> {
-        val compact = line.filter { it != 0 }
-        val temp = mutableListOf<Int>()
-        var i = compact.size - 1
-        while (i >= 0) {
-            if (i > 0 && compact[i] == compact[i - 1]) {
-                val value = compact[i] * 2
-                score += value
-                temp.add(value)
-                i -= 2
-            } else {
-                temp.add(compact[i])
-                i -= 1
+        val final = if (reversed) merged.reversed() else merged
+
+        // add move animation
+        for (i in work.indices) {
+            val value = work[i]
+            if (value == 0) continue
+            val newPos = final.indexOfFirst { it == value && it != 0 && final.count { it == value } >= work.count { it == value } }
+            if (newPos != -1 && newPos != i) {
+                if (isRow) {
+                    val fromC = if (reversed) board.size - 1 - i else i
+                    val toC = if (reversed) board.size - 1 - newPos else newPos
+                    board.addMoveAnim(value, index, fromC, index, toC)
+                } else {
+                    val fromR = if (reversed) board.size - 1 - i else i
+                    val toR = if (reversed) board.size - 1 - newPos else newPos
+                    board.addMoveAnim(value, fromR, index, toR, index)
+                }
             }
         }
-        val merged = temp.asReversed().toMutableList()
-        while (merged.size < board.size) merged.add(0, 0)
-        return merged
-    }
-
-    // Merge lên trên
-    private fun mergeLineUp(line: List<Int>): List<Int> {
-        val compact = line.filter { it != 0 }
-        val merged = mutableListOf<Int>()
-        var skip = false
-        for (i in compact.indices) {
-            if (skip) {
-                skip = false
-                continue
-            }
-            if (i < compact.size - 1 && compact[i] == compact[i + 1]) {
-                val value = compact[i] * 2
-                score += value
-                merged.add(value)
-                skip = true
-            } else {
-                merged.add(compact[i])
-            }
-        }
-        while (merged.size < board.size) merged.add(0)
-        return merged
-    }
-
-    // Merge xuống dưới
-    private fun mergeLineDown(line: List<Int>): List<Int> {
-        val compact = line.filter { it != 0 }
-        val temp = mutableListOf<Int>()
-        var i = compact.size - 1
-        while (i >= 0) {
-            if (i > 0 && compact[i] == compact[i - 1]) {
-                val value = compact[i] * 2
-                score += value
-                temp.add(value)
-                i -= 2
-            } else {
-                temp.add(compact[i])
-                i -= 1
-            }
-        }
-        val merged = temp.asReversed().toMutableList()
-        while (merged.size < board.size) merged.add(0, 0)
-        return merged
+        return final
     }
 }
