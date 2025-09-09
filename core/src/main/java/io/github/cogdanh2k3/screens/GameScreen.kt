@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.math.Interpolation
+import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.FitViewport
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.game.Board
@@ -19,22 +20,30 @@ import io.github.cogdanh2k3.utils.InputHandler
 class GameScreen(val game: Main) : ScreenAdapter() {
 
     private val camera = OrthographicCamera()
-    private val viewport = FitViewport(800f, 600f, camera) // giữ tỉ lệ 800x600
+    private val viewport = FitViewport(800f, 600f, camera)
     private val batch = SpriteBatch()
     private val shapeRenderer = ShapeRenderer()
 
-    // Fonts
+    // Fonts with better sizing
     private val titleFont = BitmapFont().apply {
-        data.setScale(3f)
+        data.setScale(2.5f)
         color = Color(0.45f, 0.42f, 0.39f, 1f)
     }
     private val scoreFont = BitmapFont().apply {
-        data.setScale(2f)
+        data.setScale(1.8f)
         color = Color.WHITE
     }
     private val labelFont = BitmapFont().apply {
+        data.setScale(1f)
+        color = Color(0.7f, 0.7f, 0.7f, 1f)
+    }
+    private val buttonFont = BitmapFont().apply {
         data.setScale(1.2f)
-        color = Color(0.8f, 0.8f, 0.8f, 1f)
+        color = Color.WHITE
+    }
+    private val instructionFont = BitmapFont().apply {
+        data.setScale(0.9f)
+        color = Color(0.6f, 0.6f, 0.6f, 1f)
     }
 
     // Game objects
@@ -49,6 +58,30 @@ class GameScreen(val game: Main) : ScreenAdapter() {
     private var scoreAnimation = 0f
     private var backgroundHue = 0f
 
+    // UI Layout constants
+    private val topMargin = 50f
+    private val sideMargin = 40f
+
+    // Header section
+    private val headerHeight = 140f
+    private val titleY = viewport.worldHeight - topMargin
+
+    // Score boxes
+    private val scoreBoxWidth = 110f
+    private val scoreBoxHeight = 80f
+    private val scoreBoxY = viewport.worldHeight - topMargin - 90f
+    private val scoreBoxSpacing = 20f
+
+    // Pause button
+    private val pauseButtonWidth = 80f
+    private val pauseButtonHeight = 35f
+    private val pauseButtonX = viewport.worldWidth - sideMargin - pauseButtonWidth
+    private val pauseButtonY = viewport.worldHeight - topMargin - 15f
+
+    // Instructions area
+    private val instructionY = 80f
+    private val instructionLineSpacing = 20f
+
     init {
         manager.spawnTile()
         manager.spawnTile()
@@ -62,6 +95,25 @@ class GameScreen(val game: Main) : ScreenAdapter() {
     }
 
     override fun render(delta: Float) {
+        handleInput()
+        updateGame(delta)
+        drawEverything()
+    }
+
+    private fun handleInput() {
+        if (Gdx.input.justTouched()) {
+            val touchPoint = Vector3(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
+            viewport.unproject(touchPoint)
+
+            // Check if pause button was clicked
+            if (isPointInRect(touchPoint.x, touchPoint.y,
+                    pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight)) {
+                pauseGame()
+            }
+        }
+    }
+
+    private fun updateGame(delta: Float) {
         if (manager.isMoved) {
             manager.update()
             val newScore = manager.score
@@ -78,8 +130,11 @@ class GameScreen(val game: Main) : ScreenAdapter() {
 
         backgroundHue += delta * 0.1f
         if (backgroundHue > 1f) backgroundHue -= 1f
+    }
 
-        val bgColor = hsvToRgb(backgroundHue, 0.1f, 0.95f)
+    private fun drawEverything() {
+        // Clear screen with animated background
+        val bgColor = hsvToRgb(backgroundHue, 0.08f, 0.96f)
         Gdx.gl.glClearColor(bgColor.r, bgColor.g, bgColor.b, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
@@ -87,48 +142,107 @@ class GameScreen(val game: Main) : ScreenAdapter() {
         batch.projectionMatrix = camera.combined
         shapeRenderer.projectionMatrix = camera.combined
 
-        // Draw UI
+        // Draw UI shapes
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+        drawHeader()
         drawScoreBoxes()
+        drawPauseButton()
         shapeRenderer.end()
 
+        // Draw text and game content
         batch.begin()
-
-        // Tiêu đề
-        titleFont.draw(batch, "2048 Animals", viewport.worldWidth / 2 - 150f, viewport.worldHeight - 30f)
-
-        // Điểm số
-        val scoreScale = if (scoreAnimation > 0f) 1f + scoreAnimation * 0.3f else 1f
-        scoreFont.data.setScale(2f * scoreScale)
-        scoreFont.draw(batch, "${displayScore.toInt()}", viewport.worldWidth / 2 - 120f, viewport.worldHeight - 70f)
-        scoreFont.draw(batch, "${displayHighScore.toInt()}", viewport.worldWidth / 2 + 40f, viewport.worldHeight - 70f)
-        scoreFont.data.setScale(2f)
-
-        labelFont.draw(batch, "SCORE", viewport.worldWidth / 2 - 120f, viewport.worldHeight - 40f)
-        labelFont.draw(batch, "BEST", viewport.worldWidth / 2 + 40f, viewport.worldHeight - 40f)
-
-        // Hướng dẫn
-        labelFont.draw(batch, "HOW TO PLAY: Swipe to move tiles.", 50f, 60f)
-        labelFont.draw(batch, "When two same animals touch, they evolve!", 50f, 35f)
-
-        // Board game ở giữa màn hình
-//        board.setPosition(
-//            (viewport.worldWidth - board.pixelSize) / 2,
-//            (viewport.worldHeight - board.pixelSize) / 2
-//        )
+        drawHeaderText()
+        drawScoreText()
+        drawPauseButtonText()
+        drawInstructions()
         board.draw(batch)
-
         batch.end()
     }
 
-    private fun drawScoreBoxes() {
-        // SCORE
-        shapeRenderer.color = Color(0.73f, 0.68f, 0.63f, 0.8f)
-        drawRoundedRect(viewport.worldWidth / 2 - 150f, viewport.worldHeight - 110f, 100f, 70f, 8f)
+    private fun drawHeader() {
+        // Header background
+        shapeRenderer.color = Color(1f, 1f, 1f, 0.1f)
+        shapeRenderer.rect(0f, viewport.worldHeight - headerHeight, viewport.worldWidth, headerHeight)
+    }
 
-        // BEST
-        shapeRenderer.color = Color(0.73f, 0.68f, 0.63f, 0.8f)
-        drawRoundedRect(viewport.worldWidth / 2 + 10f, viewport.worldHeight - 110f, 100f, 70f, 8f)
+    private fun drawScoreBoxes() {
+        val totalWidth = scoreBoxWidth * 2 + scoreBoxSpacing
+        val startX = (viewport.worldWidth - totalWidth) / 2f
+
+        // Score box
+        shapeRenderer.color = Color(0.73f, 0.68f, 0.63f, 0.85f)
+        drawRoundedRect(startX, scoreBoxY, scoreBoxWidth, scoreBoxHeight, 8f)
+
+        // Best score box
+        shapeRenderer.color = Color(0.85f, 0.72f, 0.3f, 0.85f)
+        drawRoundedRect(startX + scoreBoxWidth + scoreBoxSpacing, scoreBoxY, scoreBoxWidth, scoreBoxHeight, 8f)
+    }
+
+    private fun drawPauseButton() {
+        shapeRenderer.color = Color(0.5f, 0.5f, 0.5f, 0.9f)
+        drawRoundedRect(pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight, 6f)
+    }
+
+    private fun drawHeaderText() {
+        // Title - centered
+        val titleText = "2048 Animals"
+        // Simple centering with approximate offset
+        val titleX = viewport.worldWidth / 2f - 120f // Approximate center for "2048 Animals"
+        titleFont.draw(batch, titleText, titleX, titleY)
+    }
+
+    private fun drawScoreText() {
+        val totalWidth = scoreBoxWidth * 2 + scoreBoxSpacing
+        val startX = (viewport.worldWidth - totalWidth) / 2f
+
+        // Score labels
+        labelFont.draw(batch, "SCORE", startX + 15f, scoreBoxY + scoreBoxHeight - 15f)
+        labelFont.draw(batch, "BEST", startX + scoreBoxWidth + scoreBoxSpacing + 15f, scoreBoxY + scoreBoxHeight - 15f)
+
+        // Score values with animation
+        val scoreScale = if (scoreAnimation > 0f) 1f + scoreAnimation * 0.2f else 1f
+        scoreFont.data.setScale(1.8f * scoreScale)
+
+        // Center the score text in boxes
+        val scoreText = "${displayScore.toInt()}"
+        val bestText = "${displayHighScore.toInt()}"
+
+        scoreFont.draw(batch, scoreText, startX + 15f, scoreBoxY + 35f)
+        scoreFont.draw(batch, bestText, startX + scoreBoxWidth + scoreBoxSpacing + 15f, scoreBoxY + 35f)
+
+        scoreFont.data.setScale(1.8f) // Reset scale
+    }
+
+    private fun drawPauseButtonText() {
+        val buttonText = "PAUSE"
+        // Better text centering calculation
+        val textX = pauseButtonX + pauseButtonWidth / 2f - 20f // Approximate center offset
+        val textY = pauseButtonY + pauseButtonHeight / 2f + 6f
+        buttonFont.draw(batch, buttonText, textX, textY)
+    }
+
+    private fun drawInstructions() {
+        // Instructions at bottom of screen
+        instructionFont.draw(batch, "2048 ANIMALS", sideMargin, instructionY + instructionLineSpacing * 2)
+        instructionFont.draw(batch, "Swipe to move tiles • Match same animals to evolve!", sideMargin, instructionY + instructionLineSpacing)
+        instructionFont.draw(batch, "Try to reach the highest evolution possible!", sideMargin, instructionY)
+    }
+
+    private fun pauseGame() {
+        // Save current game state before pausing
+        val prefs = Gdx.app.getPreferences("PicFusePrefs")
+        if (score > highScore) {
+            highScore = score
+            prefs.putInteger("highscore", highScore)
+            prefs.flush()
+        }
+
+        // Switch to pause screen
+        game.screen = PauseScreen(game, this)
+    }
+
+    private fun isPointInRect(x: Float, y: Float, rectX: Float, rectY: Float, width: Float, height: Float): Boolean {
+        return x >= rectX && x <= rectX + width && y >= rectY && y <= rectY + height
     }
 
     private fun drawRoundedRect(x: Float, y: Float, width: Float, height: Float, radius: Float) {
@@ -179,6 +293,8 @@ class GameScreen(val game: Main) : ScreenAdapter() {
         titleFont.dispose()
         scoreFont.dispose()
         labelFont.dispose()
+        buttonFont.dispose()
+        instructionFont.dispose()
         board.dispose()
     }
 }
