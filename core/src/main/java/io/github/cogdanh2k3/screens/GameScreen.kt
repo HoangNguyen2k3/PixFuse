@@ -11,7 +11,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.math.Interpolation
 import com.badlogic.gdx.math.Vector3
-import com.badlogic.gdx.utils.viewport.FitViewport
+import com.badlogic.gdx.utils.viewport.ExtendViewport
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.game.Board
 import io.github.cogdanh2k3.game.GameManager
@@ -20,29 +20,31 @@ import io.github.cogdanh2k3.utils.InputHandler
 class GameScreen(val game: Main) : ScreenAdapter() {
 
     private val camera = OrthographicCamera()
-    private val viewport = FitViewport(800f, 600f, camera)
+    // Sử dụng ExtendViewport để tự động scale theo tỷ lệ màn hình
+    // Min size cho portrait, max size cho landscape
+    private val viewport = ExtendViewport(480f, 800f, 600f, 1000f, camera)
     private val batch = SpriteBatch()
     private val shapeRenderer = ShapeRenderer()
 
-    // Fonts with better sizing
+    // Fonts với sizing responsive
     private val titleFont = BitmapFont().apply {
-        data.setScale(2.5f)
+        data.setScale(getScaleFactor() * 2.0f)
         color = Color(0.45f, 0.42f, 0.39f, 1f)
     }
     private val scoreFont = BitmapFont().apply {
-        data.setScale(1.8f)
+        data.setScale(getScaleFactor() * 1.5f)
         color = Color.WHITE
     }
     private val labelFont = BitmapFont().apply {
-        data.setScale(1f)
+        data.setScale(getScaleFactor() * 0.8f)
         color = Color(0.7f, 0.7f, 0.7f, 1f)
     }
     private val buttonFont = BitmapFont().apply {
-        data.setScale(1.2f)
+        data.setScale(getScaleFactor() * 1.0f)
         color = Color.WHITE
     }
     private val instructionFont = BitmapFont().apply {
-        data.setScale(0.9f)
+        data.setScale(getScaleFactor() * 0.7f)
         color = Color(0.6f, 0.6f, 0.6f, 1f)
     }
 
@@ -58,30 +60,6 @@ class GameScreen(val game: Main) : ScreenAdapter() {
     private var scoreAnimation = 0f
     private var backgroundHue = 0f
 
-    // UI Layout constants
-    private val topMargin = 50f
-    private val sideMargin = 40f
-
-    // Header section
-    private val headerHeight = 140f
-    private val titleY = viewport.worldHeight - topMargin
-
-    // Score boxes
-    private val scoreBoxWidth = 110f
-    private val scoreBoxHeight = 80f
-    private val scoreBoxY = viewport.worldHeight - topMargin - 90f
-    private val scoreBoxSpacing = 20f
-
-    // Pause button
-    private val pauseButtonWidth = 80f
-    private val pauseButtonHeight = 35f
-    private val pauseButtonX = viewport.worldWidth - sideMargin - pauseButtonWidth
-    private val pauseButtonY = viewport.worldHeight - topMargin - 15f
-
-    // Instructions area
-    private val instructionY = 80f
-    private val instructionLineSpacing = 20f
-
     init {
         manager.spawnTile()
         manager.spawnTile()
@@ -92,6 +70,36 @@ class GameScreen(val game: Main) : ScreenAdapter() {
         val prefs = Gdx.app.getPreferences("PicFusePrefs")
         highScore = prefs.getInteger("highscore", 0)
         displayHighScore = highScore.toFloat()
+
+        setupBoard()
+    }
+
+    private fun getScaleFactor(): Float {
+        // Scale factor dựa trên kích thước màn hình
+        val screenHeight = Gdx.graphics.height.toFloat()
+        return (screenHeight / 1920f).coerceAtLeast(0.5f).coerceAtMost(1.2f)
+    }
+
+    private fun setupBoard() {
+        // Tính toán kích thước và vị trí board dựa trên viewport
+        val availableWidth = viewport.worldWidth * 0.9f
+        val availableHeight = viewport.worldHeight * 0.5f
+
+        // Kích thước tile sao cho board vừa với màn hình
+        val maxTileSize = minOf(
+            (availableWidth - 5 * 8f) / 4f, // 5 padding cho 4 tiles
+            (availableHeight - 5 * 8f) / 4f
+        )
+
+        board.tileSize = maxTileSize.coerceAtLeast(60f)
+        board.padding = board.tileSize * 0.08f
+
+        // Căn giữa board
+        val boardWidth = 4 * board.tileSize + 3 * board.padding
+        val boardHeight = 4 * board.tileSize + 3 * board.padding
+
+        board.x = (viewport.worldWidth - boardWidth) / 2f
+        board.y = (viewport.worldHeight - boardHeight) / 2f - 50f // Offset xuống một chút
     }
 
     override fun render(delta: Float) {
@@ -106,11 +114,20 @@ class GameScreen(val game: Main) : ScreenAdapter() {
             viewport.unproject(touchPoint)
 
             // Check if pause button was clicked
+            val pauseButtonX = viewport.worldWidth - getResponsiveValue(40f) - getResponsiveValue(80f)
+            val pauseButtonY = viewport.worldHeight - getResponsiveValue(50f) - getResponsiveValue(15f)
+            val pauseButtonWidth = getResponsiveValue(80f)
+            val pauseButtonHeight = getResponsiveValue(35f)
+
             if (isPointInRect(touchPoint.x, touchPoint.y,
                     pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight)) {
                 pauseGame()
             }
         }
+    }
+
+    private fun getResponsiveValue(baseValue: Float): Float {
+        return baseValue * (viewport.worldWidth / 480f)
     }
 
     private fun updateGame(delta: Float) {
@@ -160,12 +177,18 @@ class GameScreen(val game: Main) : ScreenAdapter() {
     }
 
     private fun drawHeader() {
+        val headerHeight = getResponsiveValue(140f)
         // Header background
         shapeRenderer.color = Color(1f, 1f, 1f, 0.1f)
         shapeRenderer.rect(0f, viewport.worldHeight - headerHeight, viewport.worldWidth, headerHeight)
     }
 
     private fun drawScoreBoxes() {
+        val scoreBoxWidth = getResponsiveValue(110f)
+        val scoreBoxHeight = getResponsiveValue(80f)
+        val scoreBoxSpacing = getResponsiveValue(20f)
+        val scoreBoxY = viewport.worldHeight - getResponsiveValue(50f) - getResponsiveValue(90f)
+
         val totalWidth = scoreBoxWidth * 2 + scoreBoxSpacing
         val startX = (viewport.worldWidth - totalWidth) / 2f
 
@@ -179,6 +202,11 @@ class GameScreen(val game: Main) : ScreenAdapter() {
     }
 
     private fun drawPauseButton() {
+        val pauseButtonWidth = getResponsiveValue(80f)
+        val pauseButtonHeight = getResponsiveValue(35f)
+        val pauseButtonX = viewport.worldWidth - getResponsiveValue(40f) - pauseButtonWidth
+        val pauseButtonY = viewport.worldHeight - getResponsiveValue(50f) - getResponsiveValue(15f)
+
         shapeRenderer.color = Color(0.5f, 0.5f, 0.5f, 0.9f)
         drawRoundedRect(pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight, 6f)
     }
@@ -186,12 +214,18 @@ class GameScreen(val game: Main) : ScreenAdapter() {
     private fun drawHeaderText() {
         // Title - centered
         val titleText = "2048 Animals"
-        // Simple centering with approximate offset
-        val titleX = viewport.worldWidth / 2f - 120f // Approximate center for "2048 Animals"
+        val titleY = viewport.worldHeight - getResponsiveValue(50f)
+        // Better centering calculation
+        val titleX = viewport.worldWidth / 2f - getResponsiveValue(120f)
         titleFont.draw(batch, titleText, titleX, titleY)
     }
 
     private fun drawScoreText() {
+        val scoreBoxWidth = getResponsiveValue(110f)
+        val scoreBoxHeight = getResponsiveValue(80f)
+        val scoreBoxSpacing = getResponsiveValue(20f)
+        val scoreBoxY = viewport.worldHeight - getResponsiveValue(50f) - getResponsiveValue(90f)
+
         val totalWidth = scoreBoxWidth * 2 + scoreBoxSpacing
         val startX = (viewport.worldWidth - totalWidth) / 2f
 
@@ -201,7 +235,8 @@ class GameScreen(val game: Main) : ScreenAdapter() {
 
         // Score values with animation
         val scoreScale = if (scoreAnimation > 0f) 1f + scoreAnimation * 0.2f else 1f
-        scoreFont.data.setScale(1.8f * scoreScale)
+        val currentScale = getScaleFactor() * 1.5f
+        scoreFont.data.setScale(currentScale * scoreScale)
 
         // Center the score text in boxes
         val scoreText = "${displayScore.toInt()}"
@@ -210,18 +245,26 @@ class GameScreen(val game: Main) : ScreenAdapter() {
         scoreFont.draw(batch, scoreText, startX + 15f, scoreBoxY + 35f)
         scoreFont.draw(batch, bestText, startX + scoreBoxWidth + scoreBoxSpacing + 15f, scoreBoxY + 35f)
 
-        scoreFont.data.setScale(1.8f) // Reset scale
+        scoreFont.data.setScale(currentScale) // Reset scale
     }
 
     private fun drawPauseButtonText() {
+        val pauseButtonWidth = getResponsiveValue(80f)
+        val pauseButtonHeight = getResponsiveValue(35f)
+        val pauseButtonX = viewport.worldWidth - getResponsiveValue(40f) - pauseButtonWidth
+        val pauseButtonY = viewport.worldHeight - getResponsiveValue(50f) - getResponsiveValue(15f)
+
         val buttonText = "PAUSE"
-        // Better text centering calculation
-        val textX = pauseButtonX + pauseButtonWidth / 2f - 20f // Approximate center offset
+        val textX = pauseButtonX + pauseButtonWidth / 2f - getResponsiveValue(20f)
         val textY = pauseButtonY + pauseButtonHeight / 2f + 6f
         buttonFont.draw(batch, buttonText, textX, textY)
     }
 
     private fun drawInstructions() {
+        val instructionY = getResponsiveValue(80f)
+        val instructionLineSpacing = getResponsiveValue(20f)
+        val sideMargin = getResponsiveValue(40f)
+
         // Instructions at bottom of screen
         instructionFont.draw(batch, "2048 ANIMALS", sideMargin, instructionY + instructionLineSpacing * 2)
         instructionFont.draw(batch, "Swipe to move tiles • Match same animals to evolve!", sideMargin, instructionY + instructionLineSpacing)
@@ -271,6 +314,16 @@ class GameScreen(val game: Main) : ScreenAdapter() {
 
     override fun resize(width: Int, height: Int) {
         viewport.update(width, height, true)
+        // Cập nhật lại layout khi resize
+        setupBoard()
+
+        // Cập nhật lại font scaling
+        val newScale = getScaleFactor()
+        titleFont.data.setScale(newScale * 2.0f)
+        scoreFont.data.setScale(newScale * 1.5f)
+        labelFont.data.setScale(newScale * 0.8f)
+        buttonFont.data.setScale(newScale * 1.0f)
+        instructionFont.data.setScale(newScale * 0.7f)
     }
 
     override fun pause() {
