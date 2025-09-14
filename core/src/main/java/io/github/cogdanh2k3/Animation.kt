@@ -7,8 +7,10 @@ data class Animation(
     val startY: Float,
     val endX: Float,
     val endY: Float,
+    val duration: Float = 0.15f,
     var elapsed: Float = 0f,
-    val duration: Float = 0.05f // 150ms
+    val toR: Int,
+    val toC: Int,
 ){
     fun update(delta: Float): Boolean {
         elapsed += delta

@@ -50,7 +50,7 @@ class Board(val size: Int) {
     fun addMoveAnim(value: Int, fromR: Int, fromC: Int, toR: Int, toC: Int) {
         val (sx, sy) = gridToPos(fromR, fromC)
         val (ex, ey) = gridToPos(toR, toC)
-        animations.add(Animation(value, sx, sy, ex, ey,15f))
+        animations.add(Animation(value, sx, sy, ex, ey, 0.15f, 0f, toR, toC))
     }
 
     fun addSpawnAnim(r: Int, c: Int, value: Int) {
@@ -59,17 +59,34 @@ class Board(val size: Int) {
 
     fun draw(batch: SpriteBatch) {
         val dt = Gdx.graphics.deltaTime
+// 1. Vẽ tile gốc nhưng bỏ qua tile đang spawn
+/*        for (r in 0 until size) {
+            for (c in 0 until size) {
+                val v = grid[r][c]
+                if (v == 0) continue
 
-        // Vẽ tile gốc
+                // Nếu tile này đang có spawn animation thì skip
+                if (spawnAnimations.any { it.row == r && it.col == c && it.value == v }) continue
+
+                val (dx, dy) = gridToPos(r, c)
+                tileImages[v]?.let { batch.draw(it, dx, dy, tileSize, tileSize) }
+            }
+        }*/
         for (r in 0 until size) {
             for (c in 0 until size) {
                 val v = grid[r][c]
                 if (v == 0) continue
+
+                // skip nếu tile đang spawn
+                if (spawnAnimations.any { it.row == r && it.col == c && it.value == v }) continue
+
+                // skip nếu tile đang move đến ô này
+                if (animations.any { it.value == v && it.toR == r && it.toC == c }) continue
+
                 val (dx, dy) = gridToPos(r, c)
                 tileImages[v]?.let { batch.draw(it, dx, dy, tileSize, tileSize) }
             }
         }
-
         // Vẽ animation move
         val it = animations.iterator()
         while (it.hasNext()) {

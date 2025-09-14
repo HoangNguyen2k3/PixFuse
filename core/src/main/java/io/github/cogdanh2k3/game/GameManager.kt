@@ -23,6 +23,7 @@ class GameManager(val board: Board) {
     }
 
     fun update() {
+        if(hasWon||hasLost) return
         if (isMoved) {
             spawnTile()
             checkWin()
@@ -34,7 +35,7 @@ class GameManager(val board: Board) {
         if (hasWon) return
         for (r in 0 until board.size) {
             for (c in 0 until board.size) {
-                if (board.getTile(r, c) == 2048) {
+                if (board.getTile(r, c) == 32) {
                     hasWon = true
                     return
                 }
@@ -92,14 +93,23 @@ class GameManager(val board: Board) {
         isMoved = moved
     }
 
-    private fun processLine(line: List<Int>, reversed: Boolean, index: Int, isRow: Boolean): List<Int> {
+    private fun processLine(
+        line: List<Int>,
+        reversed: Boolean,
+        index: Int,
+        isRow: Boolean
+    ): List<Int> {
         val work = if (reversed) line.reversed() else line
         val compact = work.filter { it != 0 }.toMutableList()
         val merged = mutableListOf<Int>()
         var skip = false
 
+        // Merge logic
         for (i in compact.indices) {
-            if (skip) { skip = false; continue }
+            if (skip) {
+                skip = false
+                continue
+            }
             if (i < compact.lastIndex && compact[i] == compact[i + 1]) {
                 val v = compact[i] * 2
                 score += v
@@ -113,23 +123,51 @@ class GameManager(val board: Board) {
 
         val final = if (reversed) merged.reversed() else merged
 
-        // add move animation
+        // --- FIX animation mapping ---
+        // Đảm bảo mỗi occurrence (lần xuất hiện) của value map đúng vị trí trong merged
+        val occurrenceMap = mutableMapOf<Int, Int>()
+
         for (i in work.indices) {
             val value = work[i]
             if (value == 0) continue
-            val newPos = final.indexOfFirst { it == value && it != 0 && final.count { it == value } >= work.count { it == value } }
-            if (newPos != -1 && newPos != i) {
-                if (isRow) {
-                    val fromC = if (reversed) board.size - 1 - i else i
-                    val toC = if (reversed) board.size - 1 - newPos else newPos
+
+            // lần thứ mấy gặp value này trong work
+            val occ = occurrenceMap.getOrDefault(value, 0)
+
+            // tìm vị trí occ-th trong merged
+            var count = 0
+            var newPos = -1
+            for (j in merged.indices) {
+                if (merged[j] == value) {
+                    if (count == occ) {
+                        newPos = j
+                        break
+                    }
+                    count++
+                }
+            }
+
+            occurrenceMap[value] = occ + 1 // tăng counter
+
+            if (newPos == -1) continue
+
+            if (isRow) {
+                val fromC = if (reversed) board.size - 1 - i else i
+                val toC   = if (reversed) board.size - 1 - newPos else newPos
+                if (fromC != toC) {
                     board.addMoveAnim(value, index, fromC, index, toC)
-                } else {
-                    val fromR = if (reversed) board.size - 1 - i else i
-                    val toR = if (reversed) board.size - 1 - newPos else newPos
+                }
+            } else {
+                val fromR = if (reversed) board.size - 1 - i else i
+                val toR   = if (reversed) board.size - 1 - newPos else newPos
+                if (fromR != toR) {
                     board.addMoveAnim(value, fromR, index, toR, index)
                 }
             }
         }
+
         return final
     }
+
+
 }

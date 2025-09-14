@@ -1,5 +1,6 @@
 package io.github.cogdanh2k3.utils
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.input.GestureDetector
 import io.github.cogdanh2k3.game.GameManager
 import io.github.cogdanh2k3.screens.GameScreen
@@ -14,6 +15,10 @@ class InputHandler(
     private val velocityThreshold = 200f // toc do toi thieu de vuot
 
     override fun fling(velocityX: Float, velocityY: Float, button: Int): Boolean {
+        if (manager.hasWon || manager.hasLost) {
+            Gdx.app.log("InputHandler", "Game ended → fling ignored")
+            return false
+        }
         val absX = abs(velocityX)
         val absY = abs(velocityY)
 

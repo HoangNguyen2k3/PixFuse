@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.input.GestureDetector
@@ -60,6 +61,10 @@ class GameScreen(val game: Main) : ScreenAdapter() {
     private var scoreAnimation = 0f
     private var backgroundHue = 0f
 
+    var showEndText = false
+    var endText = ""
+    var endTime = 0f
+
     init {
         manager.spawnTile()
         manager.spawnTile()
@@ -103,8 +108,31 @@ class GameScreen(val game: Main) : ScreenAdapter() {
     }
 
     override fun render(delta: Float) {
-        handleInput()
-        updateGame(delta)
+        if(!manager.hasWon && !manager.hasLost){
+            handleInput()
+            updateGame(delta)
+        }else{
+            if (!showEndText) {
+                if (manager.hasWon) {
+                    showEndText = true
+                    endText = "YOU WIN"
+                    endTime = 0f
+                } else if (manager.hasLost) {
+                    showEndText = true
+                    endText = "YOU LOSE"
+                    endTime = 0f
+                }
+            } else {
+                endTime += Gdx.graphics.deltaTime
+                if (endTime >= 3f) {
+                    if (manager.hasWon) {
+                        game.screen = WinScreen(game, score)
+                    } else {
+                        game.screen = LoseScreen(game, score)
+                    }
+                }
+            }
+        }
         drawEverything()
     }
 
@@ -147,6 +175,7 @@ class GameScreen(val game: Main) : ScreenAdapter() {
 
         backgroundHue += delta * 0.1f
         if (backgroundHue > 1f) backgroundHue -= 1f
+
     }
 
     private fun drawEverything() {
@@ -173,7 +202,28 @@ class GameScreen(val game: Main) : ScreenAdapter() {
         drawPauseButtonText()
         drawInstructions()
         board.draw(batch)
+        drawEndGameText()
         batch.end()
+    }
+    private fun drawEndGameText() {
+        if (showEndText) {
+            val progress = (endTime / 1f).coerceAtMost(1f)
+            val scale = 1f + progress * 2f
+
+            // áp dụng scale tạm thời
+            scoreFont.data.setScale(scale)
+            scoreFont.color = Color.WHITE
+
+            // layout đã tính đúng với scale hiện tại
+            val layout = GlyphLayout(scoreFont, endText)
+            val textX = (viewport.worldWidth - layout.width) / 2f
+            val textY = (viewport.worldHeight + layout.height) / 2f
+
+            scoreFont.draw(batch, endText, textX, textY)
+
+            // reset lại scale về mặc định
+            scoreFont.data.setScale(getScaleFactor() * 1.5f)
+        }
     }
 
     private fun drawHeader() {
