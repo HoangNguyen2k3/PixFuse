@@ -3,7 +3,7 @@ package io.github.cogdanh2k3.utils
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.input.GestureDetector
 import io.github.cogdanh2k3.game.GameManager
-import io.github.cogdanh2k3.screens.GameScreen
+import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 import kotlin.math.abs
 
 class InputHandler(

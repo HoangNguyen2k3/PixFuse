@@ -17,6 +17,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.Timer
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import io.github.cogdanh2k3.Main
+import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 
 class MenuScreen(val game: Main) : Screen {
 
@@ -63,7 +64,7 @@ class MenuScreen(val game: Main) : Screen {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 Timer.schedule(object : Timer.Task() {
                     override fun run() {
-                        game.screen = GameScreen(game)
+                        game.screen = ModeSelectScreen(game)
                     }
                 }, 0.2f)
             }

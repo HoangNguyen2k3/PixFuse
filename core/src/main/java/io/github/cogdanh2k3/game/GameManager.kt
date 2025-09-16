@@ -1,8 +1,9 @@
 package io.github.cogdanh2k3.game
 
+import io.github.cogdanh2k3.Mode.GameMode
 import kotlin.random.Random
 
-class GameManager(val board: Board) {
+class GameManager(val board: Board, val mode: GameMode) {
     var score = 0
         private set
     var isMoved = false
@@ -42,7 +43,6 @@ class GameManager(val board: Board) {
             }
         }
     }
-
     private fun checkLose() {
         if (hasLost || hasWon) return
         if (board.getEmptyCells().isNotEmpty()) return
