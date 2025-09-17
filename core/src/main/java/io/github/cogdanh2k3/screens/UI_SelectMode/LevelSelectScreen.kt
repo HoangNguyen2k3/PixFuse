@@ -15,6 +15,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.Mode.EndlessMode
+import io.github.cogdanh2k3.Mode.TargetMode
 import io.github.cogdanh2k3.game.DataBG
 import io.github.cogdanh2k3.game.LevelManager
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
@@ -93,7 +94,7 @@ class LevelSelectScreen(val game: Main) : Screen {
                         btn.addListener(object : ClickListener() {
                             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                                 println("Play level ${level.id} in world $world")
-                                game.screen = GameScreen(game, EndlessMode())
+                                game.screen = GameScreen(game, TargetMode(64,"Tiger"),level.id)
                             }
                         })
                     }

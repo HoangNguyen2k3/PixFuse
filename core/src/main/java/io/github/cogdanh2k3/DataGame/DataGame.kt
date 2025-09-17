@@ -1,4 +1,36 @@
 package io.github.cogdanh2k3.DataGame
 
+import com.badlogic.gdx.graphics.Texture
+
 class DataGame {
+    private val img_pokemonTheme = mapOf(
+        2 to Texture("titles/Pokemon/pikachu_2.png"),
+        4 to Texture("titles/Pokemon/charmander_4.png"),
+        8 to Texture("titles/Pokemon/bullbasaur_8.png"),
+        16 to Texture("titles/Pokemon/squirtle_16.png"),
+        32 to Texture("titles/Pokemon/eevee_32.png"),
+        64 to Texture("titles/Pokemon/jigglypuff_64.png"),
+        128 to Texture("titles/Pokemon/snorlax_128.png"),
+        256 to Texture("titles/Pokemon/dratini_256.png"),
+        512 to Texture("titles/Pokemon/pidgey_512.png"),
+        1024 to Texture("titles/Pokemon/abra_1024.png"),
+        2048 to Texture("titles/Pokemon/venonat_2048.png"),
+    )
+    private val img_plantTheme = mapOf(
+        2 to Texture("titles/Plant/Plant_2.png"),
+        4 to Texture("titles/Plant/Plant_4.png"),
+        8 to Texture("titles/Plant/Plant_8.png"),
+        16 to Texture("titles/Plant/Plant_16.png"),
+        32 to Texture("titles/Plant/Plant_32.png"),
+        64 to Texture("titles/Plant/Plant_64.png"),
+        128 to Texture("titles/Plant/Plant_128.png"),
+        256 to Texture("titles/Plant/Plant_256.png"),
+        512 to Texture("titles/Plant/Plant_512.png"),
+        1024 to Texture("titles/Plant/Plant_1024.png"),
+        2048 to Texture("titles/Plant/Plant_2048.png"),
+    )
+    val themes = listOf(
+        img_plantTheme,
+        img_pokemonTheme,
+    )
 }

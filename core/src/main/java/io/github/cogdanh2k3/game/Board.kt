@@ -8,18 +8,18 @@ import io.github.cogdanh2k3.Animation
 class Board(val size: Int) {
     private val grid: Array<IntArray> = Array(size) { IntArray(size) { 0 } }
 
-    private val tileImages = mapOf(
-        2 to Texture("titles/pikachu_2.png"),
-        4 to Texture("titles/charmander_4.png"),
-        8 to Texture("titles/bullbasaur_8.png"),
-        16 to Texture("titles/squirtle_16.png"),
-        32 to Texture("titles/eevee_32.png"),
-        64 to Texture("titles/jigglypuff_64.png"),
-        128 to Texture("titles/snorlax_128.png"),
-        256 to Texture("titles/dratini_256.png"),
-        512 to Texture("titles/pidgey_512.png"),
-        1024 to Texture("titles/abra_1024.png"),
-        2048 to Texture("titles/venonat_2048.png"),
+    public var tileImages = mapOf(
+        2 to Texture("titles/Pokemon/pikachu_2.png"),
+        4 to Texture("titles/Pokemon/charmander_4.png"),
+        8 to Texture("titles/Pokemon/bullbasaur_8.png"),
+        16 to Texture("titles/Pokemon/squirtle_16.png"),
+        32 to Texture("titles/Pokemon/eevee_32.png"),
+        64 to Texture("titles/Pokemon/jigglypuff_64.png"),
+        128 to Texture("titles/Pokemon/snorlax_128.png"),
+        256 to Texture("titles/Pokemon/dratini_256.png"),
+        512 to Texture("titles/Pokemon/pidgey_512.png"),
+        1024 to Texture("titles/Pokemon/abra_1024.png"),
+        2048 to Texture("titles/Pokemon/venonat_2048.png"),
     )
 
     var x: Float = 0f

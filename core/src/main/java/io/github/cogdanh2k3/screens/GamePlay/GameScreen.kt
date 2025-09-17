@@ -22,7 +22,7 @@ import io.github.cogdanh2k3.utils.FontUtils
 import io.github.cogdanh2k3.utils.InputHandler
 import kotlin.math.abs
 
-class GameScreen(val game: Main, val mode: GameMode) : ScreenAdapter() {
+class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : ScreenAdapter() {
 
     private val camera = OrthographicCamera()
     // Sử dụng ExtendViewport để tự động scale theo tỷ lệ màn hình
@@ -59,7 +59,7 @@ class GameScreen(val game: Main, val mode: GameMode) : ScreenAdapter() {
 
     // Game objects
     private val board = Board(4)
-    private val manager = GameManager(board,mode)
+    private val manager = GameManager(board,mode,level)
 
     private var score = 0
     private var highScore = 0
@@ -74,6 +74,7 @@ class GameScreen(val game: Main, val mode: GameMode) : ScreenAdapter() {
     var endTime = 0f
 
     init {
+        manager.InitData()
         manager.spawnTile()
         manager.spawnTile()
 

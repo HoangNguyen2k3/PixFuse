@@ -3,7 +3,7 @@ package io.github.cogdanh2k3.game
 import io.github.cogdanh2k3.Mode.GameMode
 import kotlin.random.Random
 
-class GameManager(val board: Board, val mode: GameMode) {
+class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
     var score = 0
         private set
     var isMoved = false
@@ -12,6 +12,11 @@ class GameManager(val board: Board, val mode: GameMode) {
         private set
     var hasLost = false
         private set
+    fun InitData(){
+        if(level!=-1){
+            board.tileImages = mode.data.themes[level-1]
+        }
+    }
     fun spawnTile() {
         if (hasWon || hasLost) return
         val empty = board.getEmptyCells()

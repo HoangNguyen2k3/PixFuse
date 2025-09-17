@@ -1,8 +1,10 @@
 package io.github.cogdanh2k3.Mode
+import io.github.cogdanh2k3.DataGame.DataGame
 import io.github.cogdanh2k3.game.Board
 
 interface GameMode {
     val name: String
+    val data: DataGame
     fun checkWin(board: Board, score: Int): Boolean
     fun checkLose(board: Board, score: Int): Boolean
     fun getTargetDescription(): String
@@ -10,7 +12,7 @@ interface GameMode {
 // Chế độ Endless
 class EndlessMode : GameMode {
     override val name: String = "Endless"
-
+    override val data: DataGame = DataGame()
     override fun checkWin(board: Board, score: Int): Boolean {
         // Endless không có win
         return false
@@ -36,7 +38,7 @@ class EndlessMode : GameMode {
 // Chế độ Target (ví dụ: đạt 64 để thắng)
 class TargetMode(private val targetValue: Int, private val targetName: String = "") : GameMode {
     override val name: String = "Target"
-
+    override val data: DataGame = DataGame()
     override fun checkWin(board: Board, score: Int): Boolean {
         for (r in 0 until board.size) {
             for (c in 0 until board.size) {
