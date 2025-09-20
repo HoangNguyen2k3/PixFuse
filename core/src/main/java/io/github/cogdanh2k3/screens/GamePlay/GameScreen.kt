@@ -18,12 +18,13 @@ import io.github.cogdanh2k3.Mode.GameMode
 import io.github.cogdanh2k3.Mode.TargetMode
 import io.github.cogdanh2k3.game.Board
 import io.github.cogdanh2k3.game.GameManager
+import io.github.cogdanh2k3.screens.WinScreen
 import io.github.cogdanh2k3.utils.FontUtils
 import io.github.cogdanh2k3.utils.InputHandler
 import kotlin.math.abs
 
 class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : ScreenAdapter() {
-
+    public val BOARD_SIZE = 4
     private val camera = OrthographicCamera()
     // Sử dụng ExtendViewport để tự động scale theo tỷ lệ màn hình
     // Min size cho portrait, max size cho landscape
@@ -58,7 +59,7 @@ class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : Scre
     }
 
     // Game objects
-    private val board = Board(4)
+    private val board = Board(BOARD_SIZE)
     private val manager = GameManager(board,mode,level)
 
     private var score = 0
@@ -101,16 +102,16 @@ class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : Scre
 
         // Kích thước tile sao cho board vừa với màn hình
         val maxTileSize = minOf(
-            (availableWidth - 5 * 8f) / 4f, // 5 padding cho 4 tiles
-            (availableHeight - 5 * 8f) / 4f
+            (availableWidth - 5 * 8f) / BOARD_SIZE, // 5 padding cho 4 tiles
+            (availableHeight - 5 * 8f) / BOARD_SIZE
         )
 
         board.tileSize = maxTileSize.coerceAtLeast(60f)
         board.padding = board.tileSize * 0.08f
 
         // Căn giữa board
-        val boardWidth = 4 * board.tileSize + 3 * board.padding
-        val boardHeight = 4 * board.tileSize + 3 * board.padding
+        val boardWidth = BOARD_SIZE * board.tileSize + 3 * board.padding
+        val boardHeight = BOARD_SIZE * board.tileSize + 3 * board.padding
 
         board.x = (viewport.worldWidth - boardWidth) / 2f
         board.y = (viewport.worldHeight - boardHeight) / 2f - 50f // Offset xuống một chút

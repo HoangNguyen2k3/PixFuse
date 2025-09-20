@@ -1,7 +1,10 @@
 package io.github.cogdanh2k3.DataGame
 
 import com.badlogic.gdx.graphics.Texture
-
+data class Theme(
+    val name: String,
+    val images: Map<Int, Texture>
+)
 class DataGame {
     private val img_pokemonTheme = mapOf(
         2 to Texture("titles/Pokemon/pikachu_2.png"),
@@ -29,8 +32,9 @@ class DataGame {
         1024 to Texture("titles/Plant/Plant_1024.png"),
         2048 to Texture("titles/Plant/Plant_2048.png"),
     )
+    // List theme có kèm name
     val themes = listOf(
-        img_plantTheme,
-        img_pokemonTheme,
+        Theme("Plant", img_plantTheme),
+        Theme("Pokemon", img_pokemonTheme)
     )
 }

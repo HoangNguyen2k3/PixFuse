@@ -2,6 +2,8 @@ package io.github.cogdanh2k3.utils
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.input.GestureDetector
+import io.github.cogdanh2k3.audio.SoundId
+import io.github.cogdanh2k3.audio.SoundManager
 import io.github.cogdanh2k3.game.GameManager
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 import kotlin.math.abs
@@ -28,6 +30,7 @@ class InputHandler(
             } else {
                 manager.moveLeft()
             }
+            SoundManager.playSfx(SoundId.SWOOSH)
             return true
         } else if (absY > absX && absY > velocityThreshold) {
             if (velocityY > 0) {
@@ -35,6 +38,7 @@ class InputHandler(
             } else {
                 manager.moveUp()
             }
+            SoundManager.playSfx(SoundId.SWOOSH)
             return true
         }
         return false

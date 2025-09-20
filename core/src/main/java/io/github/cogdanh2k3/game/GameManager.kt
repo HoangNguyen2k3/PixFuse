@@ -1,6 +1,9 @@
 package io.github.cogdanh2k3.game
 
+import com.badlogic.gdx.utils.Timer
 import io.github.cogdanh2k3.Mode.GameMode
+import io.github.cogdanh2k3.audio.SoundId
+import io.github.cogdanh2k3.audio.SoundManager
 import kotlin.random.Random
 
 class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
@@ -14,7 +17,7 @@ class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
         private set
     fun InitData(){
         if(level!=-1){
-            board.tileImages = mode.data.themes[level-1]
+            board.tileImages = mode.data.themes[level-1].images
         }
     }
     fun spawnTile() {
@@ -42,6 +45,7 @@ class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
         for (r in 0 until board.size) {
             for (c in 0 until board.size) {
                 if (board.getTile(r, c) == 32) {
+                    SoundManager.playSfx(SoundId.WIN)
                     hasWon = true
                     return
                 }
@@ -60,6 +64,7 @@ class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
                 if (c + 1 < board.size && v == board.getTile(r, c + 1)) return
             }
         }
+        SoundManager.playSfx(SoundId.LOSE)
         hasLost = true
     }
 
@@ -104,12 +109,13 @@ class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
         index: Int,
         isRow: Boolean
     ): List<Int> {
+
         val work = if (reversed) line.reversed() else line
         val compact = work.filter { it != 0 }.toMutableList()
-        val merged = mutableListOf<Int>()
+        val mergedList = mutableListOf<Int>()
         var skip = false
 
-        // Merge logic
+        // --- Merge logic ---
         for (i in compact.indices) {
             if (skip) {
                 skip = false
@@ -118,61 +124,91 @@ class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
             if (i < compact.lastIndex && compact[i] == compact[i + 1]) {
                 val v = compact[i] * 2
                 score += v
-                merged.add(v)
+                mergedList.add(v)
                 skip = true
             } else {
-                merged.add(compact[i])
+                mergedList.add(compact[i])
             }
         }
-        while (merged.size < board.size) merged.add(0)
 
-        val final = if (reversed) merged.reversed() else merged
+        while (mergedList.size < board.size) mergedList.add(0)
+        val final = if (reversed) mergedList.reversed() else mergedList
 
-        // --- FIX animation mapping ---
-        // Đảm bảo mỗi occurrence (lần xuất hiện) của value map đúng vị trí trong merged
-        val occurrenceMap = mutableMapOf<Int, Int>()
+        // --- Move actions với mergedResult flag ---
+        data class MoveAction(val from: Int, val to: Int, val value: Int, val mergedResult: Boolean)
+        val moveActions = mutableListOf<MoveAction>()
 
-        for (i in work.indices) {
-            val value = work[i]
-            if (value == 0) continue
-
-            // lần thứ mấy gặp value này trong work
-            val occ = occurrenceMap.getOrDefault(value, 0)
-
-            // tìm vị trí occ-th trong merged
-            var count = 0
-            var newPos = -1
-            for (j in merged.indices) {
-                if (merged[j] == value) {
-                    if (count == occ) {
-                        newPos = j
-                        break
-                    }
-                    count++
-                }
+        var readIndex = 0
+        var writeIndex = 0
+/*        while (readIndex < work.size) {
+            val v = work[readIndex]
+            if (v == 0) {
+                readIndex++
+                continue
             }
 
-            occurrenceMap[value] = occ + 1 // tăng counter
-
-            if (newPos == -1) continue
+            if (readIndex < work.lastIndex && work[readIndex] == work[readIndex + 1]) {
+                val mergedValue = v * 2
+                score += mergedValue
+                // Chỉ tile kết quả merge spawn explosion
+                moveActions.add(MoveAction(readIndex, writeIndex, v, mergedResult = false))
+                moveActions.add(MoveAction(readIndex + 1, writeIndex, work[readIndex + 1], mergedResult = true))
+                writeIndex++
+                readIndex += 2
+            } else {
+                moveActions.add(MoveAction(readIndex, writeIndex, v, mergedResult = false))
+                writeIndex++
+                readIndex++
+            }
+        }*/
+        //var readIndex = 0
+        //var writeIndex = 0
+        while (readIndex < compact.size) {
+            val v = compact[readIndex]
+            if (readIndex < compact.lastIndex && compact[readIndex] == compact[readIndex + 1]) {
+                // Tile merge
+                val mergedValue = v * 2
+                score += mergedValue
+                // Tile đầu di chuyển về writeIndex
+                moveActions.add(MoveAction(readIndex, writeIndex, v, mergedResult = false))
+                // Tile thứ hai merge → spawn explosion
+                moveActions.add(MoveAction(readIndex + 1, writeIndex, compact[readIndex + 1], mergedResult = true))
+                writeIndex++
+                readIndex += 2
+            } else {
+                // Tile đơn
+                moveActions.add(MoveAction(readIndex, writeIndex, v, mergedResult = false))
+                writeIndex++
+                readIndex++
+            }
+        }
+        // --- Tạo animation + explosion ---
+        for (action in moveActions) {
+            if (action.from == action.to) continue
 
             if (isRow) {
-                val fromC = if (reversed) board.size - 1 - i else i
-                val toC   = if (reversed) board.size - 1 - newPos else newPos
-                if (fromC != toC) {
-                    board.addMoveAnim(value, index, fromC, index, toC)
+                val fromC = if (reversed) board.size - 1 - action.from else action.from
+                val toC = if (reversed) board.size - 1 - action.to else action.to
+                board.addMoveAnim(action.value, index, fromC, index, toC)
+                if (action.mergedResult) {
+                    board.addExplosion(index, toC)
+                    SoundManager.playSfx(SoundId.MERGE)
                 }
             } else {
-                val fromR = if (reversed) board.size - 1 - i else i
-                val toR   = if (reversed) board.size - 1 - newPos else newPos
-                if (fromR != toR) {
-                    board.addMoveAnim(value, fromR, index, toR, index)
+                val fromR = if (reversed) board.size - 1 - action.from else action.from
+                val toR = if (reversed) board.size - 1 - action.to else action.to
+                board.addMoveAnim(action.value, fromR, index, toR, index)
+                if (action.mergedResult){
+                    board.addExplosion(toR, index)
+                    SoundManager.playSfx(SoundId.MERGE)
                 }
             }
         }
 
         return final
     }
+
+
 
 
 }

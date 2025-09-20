@@ -16,7 +16,11 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.Timer
 import com.badlogic.gdx.utils.viewport.ScreenViewport
+import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Main
+import io.github.cogdanh2k3.Mode.EndlessMode
+import io.github.cogdanh2k3.audio.SoundId
+import io.github.cogdanh2k3.audio.SoundManager
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 
 class MenuScreen(val game: Main) : Screen {
@@ -27,6 +31,9 @@ class MenuScreen(val game: Main) : Screen {
     private val logo = Texture("titles/logo.png")
 
     init {
+        SoundManager.loadAll()
+        SoundManager.playMusic(SoundId.MUSIC)
+
         val buttonFont = BitmapFont().apply {
             data.setScale(2.5f)
             color = Color.WHITE
@@ -64,7 +71,8 @@ class MenuScreen(val game: Main) : Screen {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 Timer.schedule(object : Timer.Task() {
                     override fun run() {
-                        game.screen = ModeSelectScreen(game)
+                      game.screen = ModeSelectScreen(game)
+                        //game.screen = WinScreen(game,1, EndlessMode())
                     }
                 }, 0.2f)
             }

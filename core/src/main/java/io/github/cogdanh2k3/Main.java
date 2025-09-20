@@ -16,6 +16,7 @@ public class Main extends Game {
 
     @Override
     public void create() {
+        // Khi mở game:
         batch = new SpriteBatch();
         setScreen(new MenuScreen(this));
     }
