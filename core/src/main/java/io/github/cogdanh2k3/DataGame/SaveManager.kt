@@ -15,10 +15,10 @@ object SaveManager {
         val file: FileHandle = Gdx.files.local(SAVE_FILE)
 
         return if (file.exists()) {
-            // Đã có file → load
+            // Đọc file lưu
             json.fromJson(GameSave::class.java, file)
         } else {
-            // Chưa có file → tạo mới
+            // Tạo save mặc định
             val newSave = createDefaultGameSave()
             saveGame(newSave)
             newSave
@@ -30,27 +30,36 @@ object SaveManager {
         file.writeString(json.prettyPrint(gameSave), false)
     }
 
+    // Khởi tạo save mặc định
     private fun createDefaultGameSave(): GameSave {
-        val levels = mutableListOf<LevelData>()
+        val worlds = mutableListOf<WorldData>()
+        var idCounter = 1
 
-        // Ví dụ khởi tạo 30 màn, chia 3 world
-        for (i in 1..30) {
-            levels.add(
-                LevelData(
-                    id = i,
-                    world = (i - 1) / 10 + 1,   // mỗi world có 10 màn
-                    indexInWorld = (i - 1) % 10 + 1,
-                    unlocked = (i == 1),        // mở màn đầu tiên
-                    stars = 0
+        // Ví dụ tạo 3 world, mỗi world 10 màn
+        for (worldId in 1..5) {
+            val levels = mutableListOf<LevelData>()
+            for (index in 1..15) {
+                levels.add(
+                    LevelData(
+                        id = idCounter++,
+                        indexInWorld = index,
+                        unlocked = (worldId == 1 && index == 1), // chỉ mở màn 1
+                        stars = 0,
+                        target = emptyList(),
+                        currentWorld = worldId
+                    )
                 )
-            )
+            }
+            worlds.add(WorldData(id = worldId, levels = levels))
         }
 
         return GameSave(
-            level = 1,
-            highest_score = 0,
+            currentLevel = 1,
+            currentUnlockLevel = 1,
+            currentUnlockWorld = 1,
+            highestScore = 0,
             theme = "Pokemon",
-            levels = levels
+            worlds = worlds
         )
     }
 }

@@ -14,8 +14,13 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.StretchViewport
+import io.github.cogdanh2k3.DataGame.GameSave
+import io.github.cogdanh2k3.DataGame.LevelData
+import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.Mode.GameMode
+import io.github.cogdanh2k3.Mode.TargetMode
+import io.github.cogdanh2k3.game.LevelManager
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 import io.github.cogdanh2k3.utils.SpriteSheetAnimation
 import kotlin.math.max
@@ -23,7 +28,8 @@ import kotlin.math.max
 class WinScreen(
     private val game: Main,
     private val score: Int,
-    private val mode: GameMode
+    private val mode: GameMode,
+    private val levelData: LevelData ?= null
 ) : ScreenAdapter() {
 
     private val camera = OrthographicCamera()
@@ -170,7 +176,54 @@ class WinScreen(
             val touch = Vector3(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
             viewport.unproject(touch)
             when {
-                playAgainBtn.contains(touch.x, touch.y) -> game.screen = GameScreen(game, mode)
+                playAgainBtn.contains(touch.x, touch.y) -> {
+                    val gameSave: GameSave = SaveManager.loadGameSave()
+
+                    if (levelData != null) {
+                        val world = LevelManager.worlds.find { it.id == levelData.currentWorld }
+                        if (world != null) {
+                            val nextIndex = levelData.indexInWorld + 1
+
+                            // 1. Trường hợp còn level trong world hiện tại
+                            val nextLevel = world.levels.find { it.indexInWorld == nextIndex }
+                            if (nextLevel != null && nextLevel.unlocked) {
+                                game.screen = GameScreen(
+                                    game,
+                                    TargetMode(nextLevel.target),
+                                    nextLevel
+                                )
+                            } else {
+                                // 2. Nếu hết level trong world hiện tại → sang world mới
+                                val nextWorld = LevelManager.worlds.find { it.id == levelData.currentWorld + 1 }
+                                if (nextWorld != null && nextWorld.levels.isNotEmpty()) {
+                                    val firstLevel = nextWorld.levels[0]
+                                    if (firstLevel.unlocked) {
+                                        game.screen = GameScreen(
+                                            game,
+                                            TargetMode(firstLevel.target),
+                                            firstLevel
+                                        )
+                                    } else {
+                                        // World chưa unlock → quay về menu
+                                        game.screen = MenuScreen(game)
+                                    }
+                                } else {
+                                    // 3. Không còn world nào nữa
+                                    game.screen = MenuScreen(game)
+                                }
+                            }
+                        } else {
+                            // Không tìm thấy world hiện tại
+                            game.screen = MenuScreen(game)
+                        }
+                    } else {
+                        // Trường hợp không có levelData (ví dụ Endless mode)
+                        val level = LevelData()
+                        game.screen = GameScreen(game, mode, level)
+                    }
+                }
+
+
                 homeBtn.contains(touch.x, touch.y) -> game.screen = MenuScreen(game)
             }
         }

@@ -30,7 +30,7 @@ class InputHandler(
             } else {
                 manager.moveLeft()
             }
-            SoundManager.playSfx(SoundId.SWOOSH)
+
             return true
         } else if (absY > absX && absY > velocityThreshold) {
             if (velocityY > 0) {
@@ -38,7 +38,7 @@ class InputHandler(
             } else {
                 manager.moveUp()
             }
-            SoundManager.playSfx(SoundId.SWOOSH)
+
             return true
         }
         return false

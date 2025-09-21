@@ -1,12 +1,13 @@
 package io.github.cogdanh2k3.game
 
 import com.badlogic.gdx.utils.Timer
+import io.github.cogdanh2k3.DataGame.LevelData
 import io.github.cogdanh2k3.Mode.GameMode
 import io.github.cogdanh2k3.audio.SoundId
 import io.github.cogdanh2k3.audio.SoundManager
 import kotlin.random.Random
 
-class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
+class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData? = null) {
     var score = 0
         private set
     var isMoved = false
@@ -16,8 +17,8 @@ class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
     var hasLost = false
         private set
     fun InitData(){
-        if(level!=-1){
-            board.tileImages = mode.data.themes[level-1].images
+        if(levelData != null && levelData.id != -1){
+            board.tileImages = mode.data.themes[levelData.currentWorld-1].images
         }
     }
     fun spawnTile() {
@@ -42,13 +43,12 @@ class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
     }
     private fun checkWin() {
         if (hasWon) return
-        for (r in 0 until board.size) {
-            for (c in 0 until board.size) {
-                if (board.getTile(r, c) == 32) {
-                    SoundManager.playSfx(SoundId.WIN)
-                    hasWon = true
-                    return
-                }
+        if (mode.checkWin(board, score)) {
+            SoundManager.playSfx(SoundId.WIN)
+            hasWon = true
+
+            if (levelData!=null&&levelData.id != -1) {
+                LevelManager.unlockNext(levelData.id)
             }
         }
     }
@@ -84,6 +84,9 @@ class GameManager(val board: Board, val mode: GameMode,val level:Int = -1) {
                     board.setTile(r, c, final[c])
                 }
             }
+        }
+        if(moved){
+            SoundManager.playSfx(SoundId.SWOOSH)
         }
         isMoved = moved
     }

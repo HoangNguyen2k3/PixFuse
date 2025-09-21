@@ -36,22 +36,31 @@ class EndlessMode : GameMode {
     }
 }
 // Chế độ Target (ví dụ: đạt 64 để thắng)
-class TargetMode(private val targetValue: Int, private val targetName: String = "") : GameMode {
+class TargetMode(
+    private val targetValues: List<Int>,         // nhiều giá trị mục tiêu
+    private val targetNames: List<String> = emptyList() // tên tương ứng (nếu có)
+) : GameMode {
     override val name: String = "Target"
     override val data: DataGame = DataGame()
+
     override fun checkWin(board: Board, score: Int): Boolean {
-        for (r in 0 until board.size) {
-            for (c in 0 until board.size) {
-                if (board.getTile(r, c) == targetValue) {
-                    return true
+        // Kiểm tra tất cả targetValues đều xuất hiện
+        return targetValues.all { target ->
+            var found = false
+            for (r in 0 until board.size) {
+                for (c in 0 until board.size) {
+                    if (board.getTile(r, c) == target) {
+                        found = true
+                        break
+                    }
                 }
+                if (found) break
             }
+            found
         }
-        return false
     }
 
     override fun checkLose(board: Board, score: Int): Boolean {
-        // Giống như Endless → lose khi không còn nước đi
         if (board.getEmptyCells().isNotEmpty()) return false
         for (r in 0 until board.size) {
             for (c in 0 until board.size) {
@@ -64,7 +73,16 @@ class TargetMode(private val targetValue: Int, private val targetName: String = 
     }
 
     override fun getTargetDescription(): String {
-        // Có thể hiển thị số hoặc tên con vật
-        return if (targetName.isNotEmpty()) "$targetName ($targetValue)" else targetValue.toString()
+        // Nếu có tên thì ghép (tên + số), nếu không thì chỉ số
+        return if (targetNames.isNotEmpty()) {
+            targetValues.mapIndexed { i, v ->
+                if (i < targetNames.size && targetNames[i].isNotEmpty())
+                    "${targetNames[i]} ($v)"
+                else
+                    v.toString()
+            }.joinToString(", ")
+        } else {
+            targetValues.joinToString(", ")
+        }
     }
 }

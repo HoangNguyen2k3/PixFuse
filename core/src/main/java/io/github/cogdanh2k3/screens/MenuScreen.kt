@@ -33,7 +33,7 @@ class MenuScreen(val game: Main) : Screen {
     init {
         SoundManager.loadAll()
         SoundManager.playMusic(SoundId.MUSIC)
-
+        SaveManager.loadGameSave()
         val buttonFont = BitmapFont().apply {
             data.setScale(2.5f)
             color = Color.WHITE

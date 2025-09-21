@@ -1,8 +1,11 @@
 package io.github.cogdanh2k3.DataGame
 
+// Save tổng
 data class GameSave(
-    var level: Int = 1,
-    var highest_score: Int = 0,
+    var currentLevel: Int = 1,
+    var currentUnlockLevel: Int = 1,
+    var currentUnlockWorld: Int = 1,// màn hiện tại
+    var highestScore: Int = 0,
     var theme: String = "Pokemon",
-    var levels: MutableList<LevelData> = mutableListOf() // danh sách level
+    var worlds: MutableList<WorldData> = mutableListOf()
 )

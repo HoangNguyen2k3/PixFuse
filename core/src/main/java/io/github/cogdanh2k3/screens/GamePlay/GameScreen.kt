@@ -13,6 +13,7 @@ import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.math.Interpolation
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.ExtendViewport
+import io.github.cogdanh2k3.DataGame.LevelData
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.Mode.GameMode
 import io.github.cogdanh2k3.Mode.TargetMode
@@ -23,8 +24,8 @@ import io.github.cogdanh2k3.utils.FontUtils
 import io.github.cogdanh2k3.utils.InputHandler
 import kotlin.math.abs
 
-class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : ScreenAdapter() {
-    public val BOARD_SIZE = 4
+class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? = null) : ScreenAdapter() {
+    public var BOARD_SIZE = if(levelData==null){4}else{levelData.sizeBoard}
     private val camera = OrthographicCamera()
     // Sử dụng ExtendViewport để tự động scale theo tỷ lệ màn hình
     // Min size cho portrait, max size cho landscape
@@ -59,8 +60,8 @@ class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : Scre
     }
 
     // Game objects
-    private val board = Board(BOARD_SIZE)
-    private val manager = GameManager(board,mode,level)
+    private var board = Board(BOARD_SIZE)
+    private val manager = GameManager(board,mode,levelData)
 
     private var score = 0
     private var highScore = 0
@@ -136,7 +137,7 @@ class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : Scre
                 endTime += Gdx.graphics.deltaTime
                 if (endTime >= 3f) {
                     if (manager.hasWon) {
-                        game.screen = WinScreen(game, score,mode)
+                        game.screen = WinScreen(game, score,mode,levelData)
                     } else {
                         game.screen = LoseScreen(game, score,mode)
                     }
@@ -202,20 +203,96 @@ class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : Scre
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
         drawHeader()        // Box điểm số
         drawTargetBox()     // Box target
+        drawPauseButton()   // <--- thêm dòng này
         shapeRenderer.end()
 
         // ===== Draw text, board =====
         batch.begin()
         drawPauseButtonText()
         drawHeaderText()       // SCORE, BEST
-        drawScoreText()        // số điểm
+        //drawScoreText()        // số điểm
         drawTargetText()       // target hoặc vô cực
+        drawPauseButtonText()   // <--- và dòng này
         board.draw(batch)      // grid
         drawInstructions()     // text hướng dẫn
         drawEndGameText()      // Win/Lose
         batch.end()
     }
+    // ======= HEADER (SCORE & BEST) =======
     private fun drawHeader() {
+        val headerHeight = getResponsiveValue(100f)
+        val scoreBoxWidth = getResponsiveValue(120f)
+        val scoreBoxHeight = headerHeight - getResponsiveValue(20f)
+        val spacing = getResponsiveValue(20f)
+
+        val totalWidth = scoreBoxWidth * 2 + spacing
+        val startX = (viewport.worldWidth - totalWidth) / 2f
+        val y = viewport.worldHeight - headerHeight
+
+        // SCORE box
+        shapeRenderer.color = Color(0.73f, 0.68f, 0.63f, 0.95f)
+        drawRoundedRect(startX, y, scoreBoxWidth, scoreBoxHeight, 12f)
+
+        // BEST box
+        shapeRenderer.color = Color(0.85f, 0.72f, 0.3f, 0.95f)
+        drawRoundedRect(startX + scoreBoxWidth + spacing, y, scoreBoxWidth, scoreBoxHeight, 12f)
+    }
+
+    private fun drawHeaderText() {
+        val headerHeight = getResponsiveValue(100f)
+        val scoreBoxWidth = getResponsiveValue(120f)
+        val scoreBoxHeight = headerHeight - getResponsiveValue(20f)
+        val spacing = getResponsiveValue(20f)
+
+        val totalWidth = scoreBoxWidth * 2 + spacing
+        val startX = (viewport.worldWidth - totalWidth) / 2f
+        val y = viewport.worldHeight - headerHeight
+
+// Trong drawHeaderText()
+        val scoreText = "SCORE: ${displayScore.toInt()}"
+        val scoreLayout = GlyphLayout(scoreFont, scoreText)
+        val scoreX = startX + (scoreBoxWidth - scoreLayout.width) / 2f
+        val scoreY = y + (scoreBoxHeight + scoreLayout.height) / 2f
+        scoreFont.draw(batch, scoreLayout, scoreX, scoreY)
+
+        val bestText = "BEST: ${displayHighScore.toInt()}"
+        val bestLayout = GlyphLayout(scoreFont, bestText)
+        val bestX = startX + scoreBoxWidth + spacing + (scoreBoxWidth - bestLayout.width) / 2f
+        val bestY = y + (scoreBoxHeight + bestLayout.height) / 2f
+        scoreFont.draw(batch, bestLayout, bestX, bestY)
+    }
+
+    private fun drawPauseButton() {
+        val pauseButtonWidth = getResponsiveValue(70f)   // nhỏ lại
+        val pauseButtonHeight = getResponsiveValue(30f)  // nhỏ lại
+        val margin = getResponsiveValue(15f)            // cách mép
+        val pauseButtonX = viewport.worldWidth - margin - pauseButtonWidth
+        val pauseButtonY = viewport.worldHeight - margin - pauseButtonHeight
+
+        // Nền
+        shapeRenderer.color = Color(0.4f, 0.4f, 0.4f, 0.95f)
+        drawRoundedRect(pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight, 6f)
+    }
+
+    private fun drawPauseButtonText() {
+        val pauseButtonWidth = getResponsiveValue(70f)
+        val pauseButtonHeight = getResponsiveValue(30f)
+        val margin = getResponsiveValue(15f)
+        val pauseButtonX = viewport.worldWidth - margin - pauseButtonWidth
+        val pauseButtonY = viewport.worldHeight - margin - pauseButtonHeight
+
+        val buttonText = "PAUSE"   // dùng biểu tượng pause
+        val layout = GlyphLayout(buttonFont, buttonText)
+        val textX = pauseButtonX + (pauseButtonWidth - layout.width) / 2f
+        val textY = pauseButtonY + (pauseButtonHeight + layout.height) / 2f
+        buttonFont.draw(batch, layout, textX, textY)
+    }
+
+
+
+
+
+   /* private fun drawHeader() {
         val headerHeight = getResponsiveValue(100f)
         val scoreBoxWidth = getResponsiveValue(120f)
         val scoreBoxHeight = headerHeight - getResponsiveValue(20f)
@@ -246,7 +323,7 @@ class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : Scre
 
         labelFont.draw(batch, "SCORE", startX + 15f, y + scoreBoxHeight - 10f)
         labelFont.draw(batch, "BEST", startX + scoreBoxWidth + spacing + 15f, y + scoreBoxHeight - 10f)
-    }
+    }*/
     private fun drawTargetBox() {
         val targetBoxWidth = getResponsiveValue(260f)
         val targetBoxHeight = getResponsiveValue(70f)
@@ -317,7 +394,7 @@ class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : Scre
         drawRoundedRect(startX + scoreBoxWidth + scoreBoxSpacing, scoreBoxY, scoreBoxWidth, scoreBoxHeight, 8f)
     }
 
-    private fun drawPauseButton() {
+  /*  private fun drawPauseButton() {
         val pauseButtonWidth = getResponsiveValue(80f)
         val pauseButtonHeight = getResponsiveValue(35f)
         val pauseButtonX = viewport.worldWidth - getResponsiveValue(40f) - pauseButtonWidth
@@ -325,7 +402,7 @@ class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : Scre
 
         shapeRenderer.color = Color(0.5f, 0.5f, 0.5f, 0.9f)
         drawRoundedRect(pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight, 6f)
-    }
+    }*/
 
 /*    private fun drawHeaderText() {
         // Title - centered
@@ -364,6 +441,7 @@ class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : Scre
         scoreFont.data.setScale(currentScale) // Reset scale
     }
 
+/*
     private fun drawPauseButtonText() {
         val pauseButtonWidth = getResponsiveValue(80f)
         val pauseButtonHeight = getResponsiveValue(35f)
@@ -375,6 +453,7 @@ class GameScreen(val game: Main, val mode: GameMode, val level: Int = -1) : Scre
         val textY = pauseButtonY + pauseButtonHeight / 2f + 6f
         buttonFont.draw(batch, buttonText, textX, textY)
     }
+*/
 
 /*
     private fun drawInstructions() {

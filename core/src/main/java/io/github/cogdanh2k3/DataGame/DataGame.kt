@@ -34,7 +34,27 @@ class DataGame {
     )
     // List theme có kèm name
     val themes = listOf(
+        Theme("Pokemon", img_pokemonTheme),
         Theme("Plant", img_plantTheme),
-        Theme("Pokemon", img_pokemonTheme)
+
     )
+}
+class DataTargetLevel{
+    private val targetlevel = mapOf(
+        1 to listOf(32),
+        2 to listOf(64),
+        3 to  listOf(32,64),
+        4 to  listOf(32,128),
+        5 to  listOf(256),
+        6 to  listOf(512),
+        7 to   listOf(128,512),
+        8 to   listOf(1024),
+        9 to  listOf(256,512,1024),
+        10 to  listOf(256,256,512,1024),
+        11 to  listOf(2048),
+        12 to  listOf(2048),
+        13 to  listOf(2048),
+        14 to  listOf(2048),
+        15 to  listOf(2048),
+        )
 }
