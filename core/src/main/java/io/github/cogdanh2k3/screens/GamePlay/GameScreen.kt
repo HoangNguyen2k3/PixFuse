@@ -248,19 +248,44 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         val startX = (viewport.worldWidth - totalWidth) / 2f
         val y = viewport.worldHeight - headerHeight
 
-// Trong drawHeaderText()
-        val scoreText = "SCORE: ${displayScore.toInt()}"
-        val scoreLayout = GlyphLayout(scoreFont, scoreText)
-        val scoreX = startX + (scoreBoxWidth - scoreLayout.width) / 2f
-        val scoreY = y + (scoreBoxHeight + scoreLayout.height) / 2f
-        scoreFont.draw(batch, scoreLayout, scoreX, scoreY)
+        // SCORE label
+        val scoreLabel = "SCORE"
+        val scoreValue = displayScore.toInt().toString()
 
-        val bestText = "BEST: ${displayHighScore.toInt()}"
-        val bestLayout = GlyphLayout(scoreFont, bestText)
-        val bestX = startX + scoreBoxWidth + spacing + (scoreBoxWidth - bestLayout.width) / 2f
-        val bestY = y + (scoreBoxHeight + bestLayout.height) / 2f
-        scoreFont.draw(batch, bestLayout, bestX, bestY)
+        val labelLayout = GlyphLayout(scoreFont, scoreLabel)
+        val valueLayout = GlyphLayout(scoreFont, scoreValue)
+
+        val scoreCenterX = startX + scoreBoxWidth / 2f
+        val scoreCenterY = y + scoreBoxHeight / 2f
+
+        // Vẽ chữ "SCORE" (ở trên)
+        val scoreLabelY = scoreCenterY + valueLayout.height / 2f + getResponsiveValue(10f)
+        scoreFont.draw(batch, labelLayout, scoreCenterX - labelLayout.width / 2f, scoreLabelY)
+
+        // Vẽ số điểm (ở dưới)
+        val scoreValueY = scoreCenterY - labelLayout.height / 2f
+        scoreFont.draw(batch, valueLayout, scoreCenterX - valueLayout.width / 2f, scoreValueY)
+
+
+        // BEST label
+        val bestLabel = "BEST"
+        val bestValue = displayHighScore.toInt().toString()
+
+        val bestLabelLayout = GlyphLayout(scoreFont, bestLabel)
+        val bestValueLayout = GlyphLayout(scoreFont, bestValue)
+
+        val bestCenterX = startX + scoreBoxWidth + spacing + scoreBoxWidth / 2f
+        val bestCenterY = y + scoreBoxHeight / 2f
+
+        // Vẽ chữ "BEST" (ở trên)
+        val bestLabelY = bestCenterY + bestValueLayout.height / 2f + getResponsiveValue(10f)
+        scoreFont.draw(batch, bestLabelLayout, bestCenterX - bestLabelLayout.width / 2f, bestLabelY)
+
+        // Vẽ số best score (ở dưới)
+        val bestValueY = bestCenterY - bestLabelLayout.height / 2f
+        scoreFont.draw(batch, bestValueLayout, bestCenterX - bestValueLayout.width / 2f, bestValueY)
     }
+
 
     private fun drawPauseButton() {
         val pauseButtonWidth = getResponsiveValue(70f)   // nhỏ lại
@@ -287,43 +312,6 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         val textY = pauseButtonY + (pauseButtonHeight + layout.height) / 2f
         buttonFont.draw(batch, layout, textX, textY)
     }
-
-
-
-
-
-   /* private fun drawHeader() {
-        val headerHeight = getResponsiveValue(100f)
-        val scoreBoxWidth = getResponsiveValue(120f)
-        val scoreBoxHeight = headerHeight - getResponsiveValue(20f)
-        val spacing = getResponsiveValue(20f)
-
-        val totalWidth = scoreBoxWidth * 2 + spacing
-        val startX = (viewport.worldWidth - totalWidth) / 2f
-        val y = viewport.worldHeight - headerHeight
-
-        // SCORE box
-        shapeRenderer.color = Color(0.73f, 0.68f, 0.63f, 0.85f)
-        drawRoundedRect(startX, y, scoreBoxWidth, scoreBoxHeight, 10f)
-
-        // BEST box
-        shapeRenderer.color = Color(0.85f, 0.72f, 0.3f, 0.85f)
-        drawRoundedRect(startX + scoreBoxWidth + spacing, y, scoreBoxWidth, scoreBoxHeight, 10f)
-    }
-
-    private fun drawHeaderText() {
-        val headerHeight = getResponsiveValue(100f)
-        val scoreBoxWidth = getResponsiveValue(120f)
-        val scoreBoxHeight = headerHeight - getResponsiveValue(20f)
-        val spacing = getResponsiveValue(20f)
-
-        val totalWidth = scoreBoxWidth * 2 + spacing
-        val startX = (viewport.worldWidth - totalWidth) / 2f
-        val y = viewport.worldHeight - headerHeight
-
-        labelFont.draw(batch, "SCORE", startX + 15f, y + scoreBoxHeight - 10f)
-        labelFont.draw(batch, "BEST", startX + scoreBoxWidth + spacing + 15f, y + scoreBoxHeight - 10f)
-    }*/
     private fun drawTargetBox() {
         val targetBoxWidth = getResponsiveValue(260f)
         val targetBoxHeight = getResponsiveValue(70f)
@@ -368,14 +356,6 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         }
     }
 
-/*    private fun drawHeader() {
-        val headerHeight = getResponsiveValue(140f)
-        // Header background
-        shapeRenderer.color = Color(1f, 1f, 1f, 0.1f)
-        shapeRenderer.rect(0f, viewport.worldHeight - headerHeight, viewport.worldWidth, headerHeight)
-    }*/
-
-
     private fun drawScoreBoxes() {
         val scoreBoxWidth = getResponsiveValue(110f)
         val scoreBoxHeight = getResponsiveValue(80f)
@@ -393,80 +373,6 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         shapeRenderer.color = Color(0.85f, 0.72f, 0.3f, 0.85f)
         drawRoundedRect(startX + scoreBoxWidth + scoreBoxSpacing, scoreBoxY, scoreBoxWidth, scoreBoxHeight, 8f)
     }
-
-  /*  private fun drawPauseButton() {
-        val pauseButtonWidth = getResponsiveValue(80f)
-        val pauseButtonHeight = getResponsiveValue(35f)
-        val pauseButtonX = viewport.worldWidth - getResponsiveValue(40f) - pauseButtonWidth
-        val pauseButtonY = viewport.worldHeight - getResponsiveValue(50f) - getResponsiveValue(15f)
-
-        shapeRenderer.color = Color(0.5f, 0.5f, 0.5f, 0.9f)
-        drawRoundedRect(pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight, 6f)
-    }*/
-
-/*    private fun drawHeaderText() {
-        // Title - centered
-        val titleText = "2048 Animals"
-        val titleY = viewport.worldHeight - getResponsiveValue(50f)
-        // Better centering calculation
-        val titleX = viewport.worldWidth / 2f - getResponsiveValue(120f)
-        titleFont.draw(batch, titleText, titleX, titleY)
-    }*/
-
-    private fun drawScoreText() {
-        val scoreBoxWidth = getResponsiveValue(110f)
-        val scoreBoxHeight = getResponsiveValue(80f)
-        val scoreBoxSpacing = getResponsiveValue(20f)
-        val scoreBoxY = viewport.worldHeight - getResponsiveValue(50f) - getResponsiveValue(90f)
-
-        val totalWidth = scoreBoxWidth * 2 + scoreBoxSpacing
-        val startX = (viewport.worldWidth - totalWidth) / 2f
-
-        // Score labels
-        labelFont.draw(batch, "SCORE", startX + 15f, scoreBoxY + scoreBoxHeight - 15f)
-        labelFont.draw(batch, "BEST", startX + scoreBoxWidth + scoreBoxSpacing + 15f, scoreBoxY + scoreBoxHeight - 15f)
-
-        // Score values with animation
-        val scoreScale = if (scoreAnimation > 0f) 1f + scoreAnimation * 0.2f else 1f
-        val currentScale = getScaleFactor() * 1.5f
-        scoreFont.data.setScale(currentScale * scoreScale)
-
-        // Center the score text in boxes
-        val scoreText = "${displayScore.toInt()}"
-        val bestText = "${displayHighScore.toInt()}"
-
-        scoreFont.draw(batch, scoreText, startX + 15f, scoreBoxY + 35f)
-        scoreFont.draw(batch, bestText, startX + scoreBoxWidth + scoreBoxSpacing + 15f, scoreBoxY + 35f)
-
-        scoreFont.data.setScale(currentScale) // Reset scale
-    }
-
-/*
-    private fun drawPauseButtonText() {
-        val pauseButtonWidth = getResponsiveValue(80f)
-        val pauseButtonHeight = getResponsiveValue(35f)
-        val pauseButtonX = viewport.worldWidth - getResponsiveValue(40f) - pauseButtonWidth
-        val pauseButtonY = viewport.worldHeight - getResponsiveValue(50f) - getResponsiveValue(15f)
-
-        val buttonText = "PAUSE"
-        val textX = pauseButtonX + pauseButtonWidth / 2f - getResponsiveValue(20f)
-        val textY = pauseButtonY + pauseButtonHeight / 2f + 6f
-        buttonFont.draw(batch, buttonText, textX, textY)
-    }
-*/
-
-/*
-    private fun drawInstructions() {
-        val instructionY = getResponsiveValue(80f)
-        val instructionLineSpacing = getResponsiveValue(20f)
-        val sideMargin = getResponsiveValue(40f)
-
-        // Instructions at bottom of screen
-        instructionFont.draw(batch, "2048 ANIMALS", sideMargin, instructionY + instructionLineSpacing * 2)
-        instructionFont.draw(batch, "Swipe to move tiles • Match same animals to evolve!", sideMargin, instructionY + instructionLineSpacing)
-        instructionFont.draw(batch, "Try to reach the highest evolution possible!", sideMargin, instructionY)
-    }
-*/
 private fun drawInstructions() {
     val margin = getResponsiveValue(40f)
     val lineSpacing = getResponsiveValue(25f)

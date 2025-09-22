@@ -66,17 +66,34 @@ class Board(val size: Int) {
         pixmap.fill()
         whiteTexture = Texture(pixmap)
         pixmap.dispose()
+        val LEVEL_1_WALLS = arrayOf(
+            Pair(1, 1),
+            Pair(2, 2)
+        )
+        for ((x, y) in LEVEL_1_WALLS) {
+            grid[x][y] = TILE_WALL
+        }
     }
 
     fun getTile(r: Int, c: Int) = grid[r][c]
     fun setTile(r: Int, c: Int, v: Int) { grid[r][c] = v }
 
-    fun getEmptyCells(): List<Pair<Int, Int>> {
+/*    fun getEmptyCells(): List<Pair<Int, Int>> {
         val res = mutableListOf<Pair<Int, Int>>()
         for (r in 0 until size) for (c in 0 until size) if (grid[r][c] == 0) res.add(r to c)
         return res
+    }*/
+    fun getEmptyCells(): List<Pair<Int, Int>> {
+        val result = mutableListOf<Pair<Int, Int>>()
+        for (r in 0 until size) {
+            for (c in 0 until size) {
+                if (grid[r][c] == 0) { // chỉ lấy ô trống, bỏ qua tường (-1)
+                    result.add(Pair(r, c))
+                }
+            }
+        }
+        return result
     }
-
     private fun gridToPos(row: Int, col: Int): Pair<Float, Float> {
         val drawX = x + col * (tileSize + padding)
         val drawY = y + (size - 1 - row) * (tileSize + padding)
@@ -113,12 +130,21 @@ class Board(val size: Int) {
         batch.color = Color(0.8f, 0.8f, 0.8f, 1f)
         batch.draw(whiteTexture, x, y, boardWidth, boardHeight)
 
-        // ---- 1. Vẽ các ô trống ----
+        // ---- 1. Vẽ các ô nền (trống + tường) ----
         for (r in 0 until size) {
             for (c in 0 until size) {
                 val (dx, dy) = gridToPos(r, c)
-                batch.color = Color(0.9f, 0.9f, 0.9f, 1f)
-                batch.draw(whiteTexture, dx, dy, tileSize, tileSize)
+                val v = grid[r][c]
+
+                if (v == TILE_WALL) {
+                    // vẽ tường màu xám đậm
+                    batch.color = Color.DARK_GRAY
+                    batch.draw(whiteTexture, dx, dy, tileSize, tileSize)
+                } else {
+                    // ô trống bình thường
+                    batch.color = Color(0.9f, 0.9f, 0.9f, 1f)
+                    batch.draw(whiteTexture, dx, dy, tileSize, tileSize)
+                }
             }
         }
         batch.color = Color.WHITE
@@ -127,7 +153,7 @@ class Board(val size: Int) {
         for (r in 0 until size) {
             for (c in 0 until size) {
                 val v = grid[r][c]
-                if (v == 0) continue
+                if (v <= 0) continue // bỏ qua ô trống và tường
 
                 if (spawnAnimations.any { it.row == r && it.col == c }) continue
                 if (animations.any { it.toR == r && it.toC == c }) continue
@@ -135,7 +161,7 @@ class Board(val size: Int) {
                 val (dx, dy) = gridToPos(r, c)
                 var scale = 1f
 
-                // merge animation check
+                // merge animation
                 val mergeAnim = mergeAnimations.find { it.row == r && it.col == c && it.value == v }
                 if (mergeAnim != null) {
                     mergeAnim.time += dt

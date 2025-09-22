@@ -43,7 +43,8 @@ object SaveManager {
                     LevelData(
                         id = idCounter++,
                         indexInWorld = index,
-                        unlocked = (worldId == 1 && index == 1), // chỉ mở màn 1
+                        //unlocked = (worldId == 1 && index == 1), // chỉ mở màn 1
+                        unlocked = true, // chỉ mở màn 1
                         stars = 0,
                         target = emptyList(),
                         currentWorld = worldId
