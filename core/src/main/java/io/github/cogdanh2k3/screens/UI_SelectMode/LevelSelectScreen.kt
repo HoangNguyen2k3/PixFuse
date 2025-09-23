@@ -164,9 +164,26 @@ class LevelSelectScreen(val game: Main) : Screen {
         var temp: Int = 0
         for (sizeB in world.sizeBoard.values) {
             if (sizeB != null) {
-                world.levels[temp++].sizeBoard = sizeB
+                world.levels[temp].sizeBoard = sizeB
+                temp++
             }
         }
+        var temp1: Int = 0
+        for (sizeB in world.wallData) {
+            if (sizeB != null) {
+                // Tạo list có cùng số phần tử với sizeB, mặc định (0,0)
+                val tempWallData = MutableList(sizeB.size) { 0 to 0 }
+
+                // Copy dữ liệu từ sizeB sang tempWallData
+                for (i in sizeB.indices) {
+                    tempWallData[i] = sizeB[i]
+                }
+
+                world.levels[temp1].wallData = tempWallData
+                temp1++
+            }
+        }
+
         val levels = world.levels
 
         var idx = 0

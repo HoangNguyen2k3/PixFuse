@@ -32,11 +32,52 @@ class DataGame {
         1024 to Texture("titles/Plant/Plant_1024.png"),
         2048 to Texture("titles/Plant/Plant_2048.png"),
     )
+    private val img_DragonBallTheme = mapOf(
+        2 to Texture("titles/DragonBall/1star.png"),
+        4 to Texture("titles/DragonBall/2star.png"),
+        8 to Texture("titles/DragonBall/3star.png"),
+        16 to Texture("titles/DragonBall/4star.png"),
+        32 to Texture("titles/DragonBall/5star.png"),
+        64 to Texture("titles/DragonBall/6star.png"),
+        128 to Texture("titles/DragonBall/7star.png"),
+        256 to Texture("titles/DragonBall/gohan.png"),
+        512 to Texture("titles/DragonBall/goku.png"),
+        1024 to Texture("titles/DragonBall/trunk.png"),
+        2048 to Texture("titles/DragonBall/shenlong.png"),
+    )
+    private val img_DoraemonTheme = mapOf(
+        2 to Texture("titles/Doraemon/bell.png"),
+        4 to Texture("titles/Doraemon/mother_nobita.png"),
+        8 to Texture("titles/Doraemon/nobisuke_nobi_father.png"),
+        16 to Texture("titles/Doraemon/nobita.png"),
+        32 to Texture("titles/Doraemon/shizuka.png"),
+        64 to Texture("titles/Doraemon/suneo.png"),
+        128 to Texture("titles/Doraemon/takeshi.png"),
+        256 to Texture("titles/Doraemon/teacher.png"),
+        512 to Texture("titles/Doraemon/dorami.png"),
+        1024 to Texture("titles/Doraemon/doraemon.png"),
+        2048 to Texture("titles/Doraemon/bell.png"),
+    )
+    private val img_memeCatTheme = mapOf(
+        2 to Texture("titles/MemeCat/angry cat.png"),
+        4 to Texture("titles/MemeCat/crycat.png"),
+        8 to Texture("titles/MemeCat/crying banana cat.png"),
+        16 to Texture("titles/MemeCat/eee-Photoroom.png"),
+        32 to Texture("titles/MemeCat/fat cat-Photoroom.png"),
+        64 to Texture("titles/MemeCat/hahacat-Photoroom.png"),
+        128 to Texture("titles/MemeCat/happyhappy-Photoroom.png"),
+        256 to Texture("titles/MemeCat/mrfresh-Photoroom.png"),
+        512 to Texture("titles/MemeCat/oeeeeee-Photoroom.png"),
+        1024 to Texture("titles/MemeCat/uia-Photoroom.png"),
+        2048 to Texture("titles/MemeCat/crycat.png"),
+    )
     // List theme có kèm name
     val themes = listOf(
         Theme("Pokemon", img_pokemonTheme),
         Theme("Plant", img_plantTheme),
-
+        Theme("Doraemon",img_DoraemonTheme),
+        Theme("MemeCat",img_memeCatTheme),
+        Theme("DragonBall",img_DragonBallTheme),
     )
 }
 class DataTargetLevel{

@@ -20,6 +20,8 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
     fun InitData(){
         if(levelData != null && levelData.id != -1){
             board.tileImages = mode.data.themes[levelData.currentWorld-1].images
+            board.LEVEL_WALLS=levelData.wallData
+            board.InitGrid()
         }
     }
     fun spawnTile() {

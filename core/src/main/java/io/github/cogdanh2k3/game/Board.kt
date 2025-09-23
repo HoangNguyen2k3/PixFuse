@@ -57,6 +57,10 @@ class Board(val size: Int) {
     var padding = 30f
     private val animations = mutableListOf<Animation>()
     private val spawnAnimations = mutableListOf<SpawnAnim>()
+    public var LEVEL_WALLS = listOf(
+        Pair(1, 1),
+        Pair(2, 2)
+    )
 
     data class SpawnAnim(val value: Int, val row: Int, val col: Int, var time: Float = 0f)
 
@@ -66,15 +70,14 @@ class Board(val size: Int) {
         pixmap.fill()
         whiteTexture = Texture(pixmap)
         pixmap.dispose()
-        val LEVEL_1_WALLS = arrayOf(
-            Pair(1, 1),
-            Pair(2, 2)
-        )
-        for ((x, y) in LEVEL_1_WALLS) {
+    //InitGrid()
+
+    }
+    fun InitGrid(){
+        for ((x, y) in LEVEL_WALLS) {
             grid[x][y] = TILE_WALL
         }
     }
-
     fun getTile(r: Int, c: Int) = grid[r][c]
     fun setTile(r: Int, c: Int, v: Int) { grid[r][c] = v }
 

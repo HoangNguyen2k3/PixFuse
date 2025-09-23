@@ -47,7 +47,8 @@ object SaveManager {
                         unlocked = true, // chỉ mở màn 1
                         stars = 0,
                         target = emptyList(),
-                        currentWorld = worldId
+                        currentWorld = worldId,
+                        wallData = emptyList()
                     )
                 )
             }

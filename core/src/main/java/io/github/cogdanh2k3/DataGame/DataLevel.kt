@@ -11,6 +11,7 @@ data class LevelData(
     var target: List<Int> = emptyList(),
     var currentWorld: Int = 1,
     var sizeBoard: Int = 4,
+    var wallData: List<Pair<Int, Int>> = emptyList<Pair<Int, Int>>()
 )
 
 // Một World gồm nhiều màn
@@ -68,4 +69,21 @@ data class WorldData(
         14 to 6,
         15 to 6
     ),
+    val wallData: List<List<Pair<Int,Int>>> = listOf(
+        listOf(),
+        listOf(),
+        listOf(Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+        listOf(Pair(1,1),Pair(2,2)),
+    )
 )
