@@ -1,134 +1,215 @@
 package io.github.cogdanh2k3.game
 
+import com.badlogic.gdx.utils.Timer
+import io.github.cogdanh2k3.DataGame.LevelData
+import io.github.cogdanh2k3.Mode.GameMode
+import io.github.cogdanh2k3.audio.SoundId
+import io.github.cogdanh2k3.audio.SoundManager
 import kotlin.random.Random
-
-class GameManager(val board: Board){
+const val TILE_WALL = -1
+class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData? = null) {
     var score = 0
         private set
-
     var isMoved = false
         private set
+    var hasWon = false
+        private set
+    var hasLost = false
+        private set
 
-    //Spawn random
-    fun spawnTile(){
-        val emptyCells = board.getEmptyCells()
-        if(emptyCells.isNotEmpty()){
-            val (x, y) = emptyCells.random()
-            board.setTile(x,y, if(Random.nextFloat() < 0.9f) 2 else 4) // 90% - 2, 10% - 4
+    fun InitData(){
+        if(levelData != null && levelData.id != -1){
+            board.tileImages = mode.data.themes[levelData.currentWorld-1].images
+            board.LEVEL_WALLS=levelData.wallData
+            board.InitGrid()
+        }
+    }
+    fun spawnTile() {
+        if (hasWon || hasLost) return
+        val empty = board.getEmptyCells()
+        if (empty.isNotEmpty()) {
+            val (r, c) = empty.random()
+            val value = if (Random.nextFloat() < 0.9f) 2 else 4
+            board.setTile(r, c, value)
+            board.addSpawnAnim(r, c, value)
         }
     }
 
-    fun update(){
-        if(isMoved == true){
+    fun update() {
+        if(hasWon||hasLost) return
+        if (isMoved) {
             spawnTile()
+            checkWin()
+            checkLose()
             isMoved = false
         }
     }
+    private fun checkWin() {
+        if (hasWon) return
+        if (mode.checkWin(board, score)) {
+            SoundManager.playSfx(SoundId.WIN)
+            hasWon = true
 
-    // Movement
-    fun moveLeft(){
-        isMoved = false
-        for(y in 0 until board.size){
-            val row = board.getRow(y)
-            val merged = mergeLine(row)
-
-            for (x in 0 until board.size){
-                if(board.getTile(x, y) !=  merged[x]){
-                    isMoved = true
-                }
-                board.setTile(x, y, merged[x])
+            if (levelData!=null&&levelData.id != -1) {
+                LevelManager.unlockNext(levelData.id)
             }
         }
     }
-    fun moveRight(){
-        isMoved = false
-        for (y in 0 until board.size){
-            val row = board.getRow(y).reversed() // nguoc lai left
-            val merged = mergeLine(row).reversed()
+    private fun checkLose() {
+        if (hasLost || hasWon) return
+        if (board.getEmptyCells().isNotEmpty()) return
 
-            for (x in 0 until board.size){
-                if(board.getTile(x, y) !=  merged[x]){
-                    isMoved = true
-                }
-                board.setTile(x, y, merged[x])
+        // không còn ô trống → check merge được nữa không
+        for (r in 0 until board.size) {
+            for (c in 0 until board.size) {
+                val v = board.getTile(r, c)
+                if (r + 1 < board.size && v == board.getTile(r + 1, c)) return
+                if (c + 1 < board.size && v == board.getTile(r, c + 1)) return
             }
         }
+        SoundManager.playSfx(SoundId.LOSE)
+        hasLost = true
     }
 
-    fun moveUp(){
-        isMoved = false
-        for (x in 0 until board.size){
-            val col = board.getCol(x)
-            val merged = mergeLine(col)
+    fun moveLeft() = moveRows(reversed = false)
+    fun moveRight() = moveRows(reversed = true)
+    fun moveUp() = moveCols(reversed = false)
+    fun moveDown() = moveCols(reversed = true)
 
-            for (y in 0 until board.size){
-                if(board.getTile(x, y) != merged[y]){
-                    isMoved = true
+    private fun moveRows(reversed: Boolean) {
+        var moved = false
+        for (r in 0 until board.size) {
+            val line = (0 until board.size).map { board.getTile(r, it) }
+            val final = processLine(line, reversed, r, isRow = true)
+            for (c in 0 until board.size) {
+                if (board.getTile(r, c) != final[c]) {
+                    moved = true
+                    board.setTile(r, c, final[c])
                 }
-                board.setTile(x, y, merged[y])
             }
         }
+        if(moved){
+            SoundManager.playSfx(SoundId.SWOOSH)
+        }
+        isMoved = moved
     }
 
-    fun moveDown(){
-        isMoved = false
-        for (x in 0 until board.size){
-            val col = board.getCol(x).reversed()
-            val merged = mergeLine(col).reversed()
-
-            for (y in 0 until board.size){
-                if(board.getTile(x, y) != merged[y]){
-                    isMoved = true
+    private fun moveCols(reversed: Boolean) {
+        var moved = false
+        for (c in 0 until board.size) {
+            val line = (0 until board.size).map { board.getTile(it, c) }
+            val final = processLine(line, reversed, c, isRow = false)
+            for (r in 0 until board.size) {
+                if (board.getTile(r, c) != final[r]) {
+                    moved = true
+                    board.setTile(r, c, final[r])
                 }
-                board.setTile(x, y, merged[y])
             }
         }
+        isMoved = moved
     }
 
+    private fun processLine(
+        line: List<Int>,
+        reversed: Boolean,
+        index: Int,
+        isRow: Boolean
+    ): List<Int> {
 
+        val work = if (reversed) line.reversed() else line
+        val final = work.toMutableList()
 
-    //merge 1 dong hoac 1 cot
-    private fun mergeLine(line: List<Int>): List<Int>{
-        val newLine = line.filter{it!=0}.toMutableList() //bo qua o trong
-        val mergedLine = mutableListOf<Int>()
-        var skip = false
+        data class MoveAction(val from: Int, val to: Int, val value: Int, val merged: Boolean)
+        val moveActions = mutableListOf<MoveAction>()
 
-        for(i in newLine.indices){
-            if(skip){
-                skip = false
+        var start = 0
+        while (start < work.size) {
+            if (work[start] == TILE_WALL) {
+                start++
                 continue
             }
 
-            if(i< newLine.size - 1 && newLine[i] == newLine[i+1]){
-                val mergedValue = newLine[i] * 2
-                score += mergedValue
-                mergedLine.add(mergedValue)
-                skip = true
-            }else{
-                mergedLine.add(newLine[i])
+            // tìm đoạn liên tục không chứa WALL
+            var end = start
+            while (end < work.size && work[end] != TILE_WALL) end++
+
+            // compact đoạn
+            val compact = mutableListOf<Pair<Int, Int>>() // (giá trị, vị trí gốc)
+            for (i in start until end) {
+                val v = work[i]
+                if (v != 0) compact.add(v to i)
+            }
+
+            val mergedList = mutableListOf<Int>()
+            var writeIndex = start
+            var i = 0
+            while (i < compact.size) {
+                val (v, pos) = compact[i]
+                if (i < compact.lastIndex && v == compact[i + 1].first) {
+                    // merge
+                    val mergedValue = v * 2
+                    score += mergedValue
+                    mergedList.add(mergedValue)
+
+                    moveActions.add(MoveAction(compact[i].second, writeIndex, v, merged = false))
+                    moveActions.add(MoveAction(compact[i + 1].second, writeIndex, v, merged = true))
+
+                    writeIndex++
+                    i += 2
+                } else {
+                    // không merge
+                    mergedList.add(v)
+                    moveActions.add(MoveAction(pos, writeIndex, v, merged = false))
+
+                    writeIndex++
+                    i++
+                }
+            }
+
+            // padding 0 cho đủ đoạn
+            while (mergedList.size < end - start) mergedList.add(0)
+
+            // gán kết quả vào final
+            for (j in mergedList.indices) {
+                final[start + j] = mergedList[j]
+            }
+
+            start = end
+        }
+
+        val output = if (reversed) final.reversed() else final
+
+        // --- Tạo animation ---
+        for (action in moveActions) {
+            if (action.from == action.to) continue
+
+            if (isRow) {
+                val fromC = if (reversed) board.size - 1 - action.from else action.from
+                val toC = if (reversed) board.size - 1 - action.to else action.to
+                board.addMoveAnim(action.value, index, fromC, index, toC)
+
+                if (action.merged) {
+                    board.addExplosion(index, toC)
+                    SoundManager.playSfx(SoundId.MERGE)
+                }
+            } else {
+                val fromR = if (reversed) board.size - 1 - action.from else action.from
+                val toR = if (reversed) board.size - 1 - action.to else action.to
+                board.addMoveAnim(action.value, fromR, index, toR, index)
+
+                if (action.merged) {
+                    board.addExplosion(toR, index)
+                    SoundManager.playSfx(SoundId.MERGE)
+                }
             }
         }
 
-        // add 0 cho du size
-        while (mergedLine.size < board.size) {
-            mergedLine.add(0)
-        }
-
-        return mergedLine
+        return output
     }
 
-    fun isGameOver(): Boolean{
-        if(board.getEmptyCells().isNotEmpty())return false
 
-        // check con merge duoc ko
-        for(y in 0 until board.size){
-            for(x in 0 until board.size){
-                val value = board.getTile(x, y)
-                if(x < board.size - 1 && value == board.getTile(x + 1, y)) return false
-                if(y < board.size - 1 && value == board.getTile(x, y+1)) return false
 
-            }
-        }
-        return true
-    }
+
+
+
 }
