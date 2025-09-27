@@ -49,7 +49,7 @@ class TargetMode(
             var found = false
             for (r in 0 until board.size) {
                 for (c in 0 until board.size) {
-                    if (board.getTile(r, c) == target) {
+                    if (board.getTile(r, c).value == target) {
                         found = true
                         break
                     }
@@ -84,5 +84,36 @@ class TargetMode(
         } else {
             targetValues.joinToString(", ")
         }
+    }
+}
+class TimedMode(
+    private val durationSeconds: Float = 180f // 3 phút
+) : GameMode {
+    override val name: String = "Timed"
+    override val data: DataGame = DataGame()
+
+    var remainingTime: Float = durationSeconds
+        private set
+
+    fun update(delta: Float) {
+        if (remainingTime > 0f) {
+            remainingTime -= delta
+            if (remainingTime < 0f) remainingTime = 0f
+        }
+    }
+
+    override fun checkWin(board: Board, score: Int): Boolean {
+        // Có thể thắng theo score hoặc không, tạm để false
+        return false
+    }
+
+    override fun checkLose(board: Board, score: Int): Boolean {
+        return remainingTime <= 0f
+    }
+
+    override fun getTargetDescription(): String {
+        val minutes = (remainingTime.toInt() / 60).toString().padStart(2, '0')
+        val seconds = (remainingTime.toInt() % 60).toString().padStart(2, '0')
+        return "$minutes:$seconds"
     }
 }

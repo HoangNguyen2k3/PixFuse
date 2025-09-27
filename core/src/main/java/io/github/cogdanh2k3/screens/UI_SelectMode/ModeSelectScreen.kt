@@ -19,6 +19,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.Mode.EndlessMode
 import io.github.cogdanh2k3.Mode.TargetMode
+import io.github.cogdanh2k3.Mode.TimedMode
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 import io.github.cogdanh2k3.utils.FontUtils
 
@@ -103,7 +104,13 @@ class ModeSelectScreen(val game: Main) : Screen {
             })
         }
 
-        val mode3Button = TextButton("MODE 3 (LOCK)", lockedStyle).apply { isDisabled = true }
+        val mode3Button = TextButton("TIMING MODE", style).apply {
+            addListener(object : ClickListener() {
+                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                    game.screen = GameScreen(game, TimedMode()) // TODO: truyền mode Endless
+                }
+            })
+        }
         val mode4Button = TextButton("MODE 4 (LOCK)", lockedStyle).apply { isDisabled = true }
 
         // Sắp xếp UI

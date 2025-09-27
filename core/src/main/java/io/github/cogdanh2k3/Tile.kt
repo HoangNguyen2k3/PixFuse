@@ -3,7 +3,12 @@ package io.github.cogdanh2k3.game
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.Interpolation
-
+data class Tile(
+    var value: Int = 0,       // 0 = trống, -1 = tường, >0 = giá trị tile
+    var frozen: Int = 0,       // >0 = số lần cần vuốt để phá băng
+    var bomb: Boolean = false, // true = có bom, false = không có bom
+)
+/*
 class Tile(
     var row: Int,
     var col: Int,
@@ -44,3 +49,4 @@ class Tile(
         batch.draw(image, x, y, tileSize, tileSize)
     }
 }
+*/

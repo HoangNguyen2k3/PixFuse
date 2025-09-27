@@ -7,6 +7,7 @@ import io.github.cogdanh2k3.audio.SoundId
 import io.github.cogdanh2k3.audio.SoundManager
 import kotlin.random.Random
 const val TILE_WALL = -1
+const val TILE_FROZEN = -2
 class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData? = null) {
     var score = 0
         private set
@@ -24,6 +25,7 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
             board.InitGrid()
         }
     }
+/*
     fun spawnTile() {
         if (hasWon || hasLost) return
         val empty = board.getEmptyCells()
@@ -34,7 +36,21 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
             board.addSpawnAnim(r, c, value)
         }
     }
+*/
+fun spawnTile() {
+    if (hasWon || hasLost) return
+    val empty = board.getEmptyCells()
+    if (empty.isNotEmpty()) {
+        val (r, c) = empty.random()
+        val value = if (Random.nextFloat() < 0.9f) 2 else 4
 
+        // Xác suất spawn tile đóng băng (ví dụ 20%)
+        val frozen = if (Random.nextFloat() < 0.2f) 2 else 0
+
+        board.setTile(r, c, value, frozen)
+        board.addSpawnAnim(r, c, value)
+    }
+}
     fun update() {
         if(hasWon||hasLost) return
         if (isMoved) {
@@ -82,14 +98,18 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
             val line = (0 until board.size).map { board.getTile(r, it) }
             val final = processLine(line, reversed, r, isRow = true)
             for (c in 0 until board.size) {
-                if (board.getTile(r, c) != final[c]) {
+                val oldTile = board.getTile(r, c)
+                val newTile = final[c]
+                if (oldTile.value != newTile.value) { // ❌ bỏ so frozen
                     moved = true
-                    board.setTile(r, c, final[c])
                 }
+                board.setTile(r, c, newTile.copy(frozen = oldTile.frozen)) // giữ nguyên frozen
             }
         }
-        if(moved){
+
+        if (moved) {
             SoundManager.playSfx(SoundId.SWOOSH)
+            reduceFrozenTiles() // ✅ chỉ giảm khi có movement thật
         }
         isMoved = moved
     }
@@ -100,74 +120,105 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
             val line = (0 until board.size).map { board.getTile(it, c) }
             val final = processLine(line, reversed, c, isRow = false)
             for (r in 0 until board.size) {
-                if (board.getTile(r, c) != final[r]) {
+                val oldTile = board.getTile(r, c)
+                val newTile = final[r]
+                if (oldTile.value != newTile.value) {
                     moved = true
-                    board.setTile(r, c, final[r])
                 }
+                board.setTile(r, c, newTile.copy(frozen = oldTile.frozen))
             }
+        }
+
+        if (moved) {
+            SoundManager.playSfx(SoundId.SWOOSH)
+            reduceFrozenTiles()
         }
         isMoved = moved
     }
+    // ✅ Hàm giảm frozen sau khi move
+    private fun reduceFrozenTiles() {
+        for (r in 0 until board.size) {
+            for (c in 0 until board.size) {
+                val t = board.getTile(r, c)
+                if (t.frozen > 0) {
+                    board.setTile(r, c, t.copy(frozen = t.frozen - 1))
+                }
+            }
+        }
+    }
+
 
     private fun processLine(
-        line: List<Int>,
+        line: List<Tile>,
         reversed: Boolean,
         index: Int,
         isRow: Boolean
-    ): List<Int> {
+    ): List<Tile> {
 
         val work = if (reversed) line.reversed() else line
-        val final = work.toMutableList()
+        val final = work.map { it.copy() }.toMutableList()
 
         data class MoveAction(val from: Int, val to: Int, val value: Int, val merged: Boolean)
         val moveActions = mutableListOf<MoveAction>()
 
         var start = 0
         while (start < work.size) {
-            if (work[start] == TILE_WALL) {
+            // Nếu là wall hoặc tile đóng băng thì bỏ qua (đóng băng coi như wall)
+            if (work[start].value == TILE_WALL || work[start].frozen > 0) {
+                if (work[start].frozen > 0) {
+                    // giảm thời gian đóng băng
+                    final[start] = work[start].copy(frozen = work[start].frozen - 1)
+                }
                 start++
                 continue
             }
 
-            // tìm đoạn liên tục không chứa WALL
+            // tìm đoạn liên tục không có WALL và không có FROZEN
             var end = start
-            while (end < work.size && work[end] != TILE_WALL) end++
+            while (end < work.size && work[end].value != TILE_WALL && work[end].frozen == 0) end++
 
             // compact đoạn
-            val compact = mutableListOf<Pair<Int, Int>>() // (giá trị, vị trí gốc)
+            val compact = mutableListOf<Pair<Tile, Int>>() // (Tile, vị trí gốc)
             for (i in start until end) {
-                val v = work[i]
-                if (v != 0) compact.add(v to i)
+                val t = work[i]
+                if (t.value != 0) compact.add(t to i)
             }
 
-            val mergedList = mutableListOf<Int>()
+            val mergedList = mutableListOf<Tile>()
             var writeIndex = start
             var i = 0
             while (i < compact.size) {
-                val (v, pos) = compact[i]
-                if (i < compact.lastIndex && v == compact[i + 1].first) {
-                    // merge
-                    val mergedValue = v * 2
-                    score += mergedValue
-                    mergedList.add(mergedValue)
+                val (tile, pos) = compact[i]
 
-                    moveActions.add(MoveAction(compact[i].second, writeIndex, v, merged = false))
-                    moveActions.add(MoveAction(compact[i + 1].second, writeIndex, v, merged = true))
+                // xử lý merge
+                if (i < compact.lastIndex) {
+                    val (nextTile, _) = compact[i + 1]
 
-                    writeIndex++
-                    i += 2
-                } else {
-                    // không merge
-                    mergedList.add(v)
-                    moveActions.add(MoveAction(pos, writeIndex, v, merged = false))
+                    if (nextTile.frozen == 0 && tile.value == nextTile.value) {
+                        // merge hợp lệ
+                        val mergedValue = tile.value * 2
+                        score += mergedValue
 
-                    writeIndex++
-                    i++
+                        mergedList.add(Tile(mergedValue, 0))
+
+                        moveActions.add(MoveAction(compact[i].second, writeIndex, tile.value, merged = false))
+                        moveActions.add(MoveAction(compact[i + 1].second, writeIndex, nextTile.value, merged = true))
+
+                        writeIndex++
+                        i += 2
+                        continue
+                    }
                 }
+
+                // không merge
+                mergedList.add(tile.copy())
+                moveActions.add(MoveAction(pos, writeIndex, tile.value, merged = false))
+                writeIndex++
+                i++
             }
 
             // padding 0 cho đủ đoạn
-            while (mergedList.size < end - start) mergedList.add(0)
+            while (mergedList.size < end - start) mergedList.add(Tile(0, 0))
 
             // gán kết quả vào final
             for (j in mergedList.indices) {
@@ -190,6 +241,7 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
 
                 if (action.merged) {
                     board.addExplosion(index, toC)
+                    board.addMergeAnim(index, toC, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
                 }
             } else {
@@ -199,6 +251,7 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
 
                 if (action.merged) {
                     board.addExplosion(toR, index)
+                    board.addMergeAnim(toR, index, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
                 }
             }
@@ -206,6 +259,8 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
 
         return output
     }
+
+
 
 
 

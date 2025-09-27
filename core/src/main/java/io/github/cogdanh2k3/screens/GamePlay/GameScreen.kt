@@ -17,6 +17,7 @@ import io.github.cogdanh2k3.DataGame.LevelData
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.Mode.GameMode
 import io.github.cogdanh2k3.Mode.TargetMode
+import io.github.cogdanh2k3.Mode.TimedMode
 import io.github.cogdanh2k3.game.Board
 import io.github.cogdanh2k3.game.GameManager
 import io.github.cogdanh2k3.screens.WinScreen
@@ -144,7 +145,11 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
                 }
             }
         }
+        if (mode is TimedMode) {
+            mode.update(delta)   // <-- giảm thời gian mỗi frame
+        }
         drawEverything()
+
     }
 
     private fun handleInput() {
@@ -204,6 +209,7 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         drawHeader()        // Box điểm số
         drawTargetBox()     // Box target
         drawPauseButton()   // <--- thêm dòng này
+        drawBoosterButtons();
         shapeRenderer.end()
 
         // ===== Draw text, board =====
@@ -213,6 +219,7 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         //drawScoreText()        // số điểm
         drawTargetText()       // target hoặc vô cực
         drawPauseButtonText()   // <--- và dòng này
+        drawBoosterButtonText()
         board.draw(batch)      // grid
         drawInstructions()     // text hướng dẫn
         drawEndGameText()      // Win/Lose
@@ -409,6 +416,78 @@ private fun drawInstructions() {
         shapeRenderer.circle(x + width - radius, y + height - radius, radius)
     }
 
+/*    // Khai báo texture ở class
+    private lateinit var boosterTexture: Texture
+
+// Trong constructor hoặc create():
+    boosterTexture = Texture(Gdx.files.internal("button.png"))
+
+    private fun drawBoosterButtons(batch: SpriteBatch) {
+        val radius = getResponsiveValue(40f)
+        val marginBottom = getResponsiveValue(20f)
+        val spacing = getResponsiveValue(30f)
+
+        val totalWidth = radius * 2 * 3 + spacing * 2
+        val startX = (viewport.worldWidth - totalWidth) / 2f
+        val centerY = marginBottom + radius
+
+        // Kích thước vẽ (ảnh vuông nên lấy đường kính = radius*2)
+        val size = radius * 2f
+
+        // Booster 1
+        batch.draw(boosterTexture, startX, centerY - radius, size, size)
+
+        // Booster 2
+        batch.draw(boosterTexture, startX + radius * 2 + spacing, centerY - radius, size, size)
+
+        // Booster 3
+        batch.draw(boosterTexture, startX + radius * 4 + spacing * 2, centerY - radius, size, size)
+    }*/
+    private fun drawBoosterButtons() {
+        val radius = getResponsiveValue(40f)
+        val marginBottom = getResponsiveValue(20f)
+        val spacing = getResponsiveValue(30f)
+
+        val totalWidth = radius * 2 * 3 + spacing * 2
+        val startX = (viewport.worldWidth - totalWidth) / 2f
+        val centerY = marginBottom + radius
+
+        // Booster 1
+        shapeRenderer.color = Color(0.9f, 0.5f, 0.4f, 0.9f)
+        shapeRenderer.circle(startX + radius, centerY, radius)
+
+        // Booster 2
+        shapeRenderer.color = Color(0.4f, 0.8f, 0.5f, 0.9f)
+        shapeRenderer.circle(startX + radius * 3 + spacing, centerY, radius)
+
+        // Booster 3
+        shapeRenderer.color = Color(0.4f, 0.6f, 0.9f, 0.9f)
+        shapeRenderer.circle(startX + radius * 5 + spacing * 2, centerY, radius)
+    }
+    private fun drawBoosterButtonText() {
+        val radius = getResponsiveValue(40f)
+        val marginBottom = getResponsiveValue(20f)
+        val spacing = getResponsiveValue(30f)
+
+        val totalWidth = radius * 2 * 3 + spacing * 2
+        val startX = (viewport.worldWidth - totalWidth) / 2f
+        val centerY = marginBottom + radius
+
+        val labels = listOf("B1", "B2", "B3")
+        val positions = listOf(
+            startX + radius,
+            startX + radius * 3 + spacing,
+            startX + radius * 5 + spacing * 2
+        )
+
+        for (i in 0..2) {
+            val text = labels[i]
+            val layout = GlyphLayout(buttonFont, text)
+            val textX = positions[i] - layout.width / 2f
+            val textY = centerY + layout.height / 2f
+            buttonFont.draw(batch, layout, textX, textY)
+        }
+    }
     private fun hsvToRgb(h: Float, s: Float, v: Float): Color {
         val c = v * s
         val x = c * (1 - abs(((h * 6) % 2) - 1))

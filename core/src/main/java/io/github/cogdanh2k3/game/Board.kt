@@ -4,14 +4,34 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import io.github.cogdanh2k3.Anim.ExplosionMerge
 import io.github.cogdanh2k3.Animation
+import io.github.cogdanh2k3.screens.GamePlay.GameScreen
+import io.github.cogdanh2k3.utils.FontUtils
 import io.github.cogdanh2k3.utils.SpriteSheetAnimation
 import kotlin.math.sin
-
+import com.badlogic.gdx.graphics.OrthographicCamera
+import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.input.GestureDetector
+import com.badlogic.gdx.math.Interpolation
+import com.badlogic.gdx.math.Vector3
+import com.badlogic.gdx.utils.viewport.ExtendViewport
+import io.github.cogdanh2k3.DataGame.LevelData
+import io.github.cogdanh2k3.Main
+import io.github.cogdanh2k3.Mode.GameMode
+import io.github.cogdanh2k3.Mode.TargetMode
+import io.github.cogdanh2k3.Mode.TimedMode
+import io.github.cogdanh2k3.game.Board
+import io.github.cogdanh2k3.game.GameManager
+import io.github.cogdanh2k3.screens.WinScreen
+import io.github.cogdanh2k3.utils.InputHandler
+import sun.java2d.SunGraphicsEnvironment.getScaleFactor
+import kotlin.math.abs
 class Board(val size: Int) {
-    private val grid: Array<IntArray> = Array(size) { IntArray(size) { 0 } }
+    private val grid: Array<Array<Tile>> = Array(size) { Array(size) { Tile() } }
     var tileImages = mapOf(
         2 to Texture("titles/Pokemon/pikachu_2.png"),
         4 to Texture("titles/Pokemon/charmander_4.png"),
@@ -25,7 +45,7 @@ class Board(val size: Int) {
         1024 to Texture("titles/Pokemon/abra_1024.png"),
         2048 to Texture("titles/Pokemon/venonat_2048.png"),
     )
-
+    private val iceTileTextures = Texture("titles/tile_ice.png")
     // ---- Explosion animation ----
     private val explosionSheet = SpriteSheetAnimation(
         "effects/explosion.png",
@@ -50,7 +70,10 @@ class Board(val size: Int) {
 
     // Texture trắng 1x1 để fill màu
     private val whiteTexture: Texture
-
+    private val labelFont = BitmapFont().apply {
+        data.setScale(3f)
+        color = Color.WHITE
+    }
     var x: Float = 0f
     var y: Float = 0f
     var tileSize = 128f
@@ -75,11 +98,21 @@ class Board(val size: Int) {
     }
     fun InitGrid(){
         for ((x, y) in LEVEL_WALLS) {
-            grid[x][y] = TILE_WALL
+            grid[x][y].value = TILE_WALL
         }
     }
-    fun getTile(r: Int, c: Int) = grid[r][c]
-    fun setTile(r: Int, c: Int, v: Int) { grid[r][c] = v }
+    fun setTile(r: Int, c: Int, tile: Tile) {
+        grid[r][c] = tile
+    }
+
+    fun setTile(r: Int, c: Int, value: Int, frozen: Int = 0) {
+        grid[r][c].value = value
+        grid[r][c].frozen = frozen
+    }
+
+    fun getTile(r: Int, c: Int): Tile = grid[r][c]
+
+    fun isFrozen(r: Int, c: Int) = grid[r][c].frozen > 0
 
 /*    fun getEmptyCells(): List<Pair<Int, Int>> {
         val res = mutableListOf<Pair<Int, Int>>()
@@ -90,7 +123,7 @@ class Board(val size: Int) {
         val result = mutableListOf<Pair<Int, Int>>()
         for (r in 0 until size) {
             for (c in 0 until size) {
-                if (grid[r][c] == 0) { // chỉ lấy ô trống, bỏ qua tường (-1)
+                if (grid[r][c].value == 0) { // chỉ lấy ô trống, bỏ qua tường (-1)
                     result.add(Pair(r, c))
                 }
             }
@@ -139,7 +172,7 @@ class Board(val size: Int) {
                 val (dx, dy) = gridToPos(r, c)
                 val v = grid[r][c]
 
-                if (v == TILE_WALL) {
+                if (v.value == TILE_WALL) {
                     // vẽ tường màu xám đậm
                     batch.color = Color.DARK_GRAY
                     batch.draw(whiteTexture, dx, dy, tileSize, tileSize)
@@ -156,7 +189,7 @@ class Board(val size: Int) {
         for (r in 0 until size) {
             for (c in 0 until size) {
                 val v = grid[r][c]
-                if (v <= 0) continue // bỏ qua ô trống và tường
+                if (v.value <= 0) continue // bỏ qua ô trống và tường
 
                 if (spawnAnimations.any { it.row == r && it.col == c }) continue
                 if (animations.any { it.toR == r && it.toC == c }) continue
@@ -165,7 +198,7 @@ class Board(val size: Int) {
                 var scale = 1f
 
                 // merge animation
-                val mergeAnim = mergeAnimations.find { it.row == r && it.col == c && it.value == v }
+                val mergeAnim = mergeAnimations.find { it.row == r && it.col == c && it.value == v.value }
                 if (mergeAnim != null) {
                     mergeAnim.time += dt
                     val t = (mergeAnim.time / 0.25f).coerceAtMost(1f)
@@ -174,7 +207,24 @@ class Board(val size: Int) {
                 }
 
                 val offset = tileSize * (1 - scale) / 2
-                tileImages[v]?.let { batch.draw(it, dx + offset, dy + offset, tileSize * scale, tileSize * scale) }
+                tileImages[v.value]?.let { batch.draw(it, dx + offset, dy + offset, tileSize * scale, tileSize * scale) }
+                // nếu bị đóng băng thì vẽ overlay màu xanh nhạt
+                if (v.frozen > 0) {
+                    // Vẽ băng với alpha 0.7
+                    batch.color = Color(1f, 1f, 1f, 0.7f)
+                    batch.draw(iceTileTextures, dx, dy, tileSize, tileSize)
+                    batch.color = Color.WHITE
+
+                    // Vẽ số lượt rã đông còn lại
+                    val frozenText = v.frozen.toString()
+                    val layout = GlyphLayout(labelFont, frozenText)
+                    val textX = dx + (tileSize - layout.width) / 2f
+                    val textY = dy + (tileSize + layout.height) / 2f
+
+                    labelFont.color = Color.BLACK  // chữ đen cho dễ nhìn
+                    labelFont.draw(batch, layout, textX, textY)
+                }
+
             }
         }
 
