@@ -1,5 +1,6 @@
 package io.github.cogdanh2k3.game
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Timer
 import io.github.cogdanh2k3.DataGame.LevelData
 import io.github.cogdanh2k3.Mode.GameMode
@@ -17,7 +18,10 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
         private set
     var hasLost = false
         private set
-
+    //-------------------Booster-----------------------
+    var doubleNextMerge: Boolean = false
+    var activeWallBooster: Boolean = false
+    var activeBombRowBooster: Boolean = false
     fun InitData(){
         if(levelData != null && levelData.id != -1){
             board.tileImages = mode.data.themes[levelData.currentWorld-1].images
@@ -144,6 +148,9 @@ fun spawnTile() {
         }
 
         if (moved) {
+            if(doubleNextMerge==true){
+                doubleNextMerge = false
+            }
             SoundManager.playSfx(SoundId.SWOOSH)
             reduceSpecialTiles() // ✅ chỉ giảm khi có movement thật
         }
@@ -164,8 +171,10 @@ fun spawnTile() {
                 board.setTile(r, c, newTile.copy(frozen = oldTile.frozen))
             }
         }
-
         if (moved) {
+            if(doubleNextMerge==true){
+                doubleNextMerge = false
+            }
             SoundManager.playSfx(SoundId.SWOOSH)
             reduceSpecialTiles()
         }
@@ -182,6 +191,7 @@ fun spawnTile() {
                     board.setTile(r, c, t.copy(frozen = newFrozen))
                     if (newFrozen == 0) {
                         // 👉 chỗ này: tile vừa tan băng
+                        Gdx.input.vibrate(200)
                         board.addExplosionIceThaw(r, c) // hoặc hiệu ứng crack ice
                         //SoundManager.playSfx(SoundId.UNFREEZE)
                     }
@@ -214,6 +224,7 @@ fun spawnTile() {
         }
 
         board.addExplosionBoom(r, c)
+        Gdx.input.vibrate(300)
 //        SoundManager.playSfx(SoundId.EXPLODE)
     }
     private fun processLine(
@@ -264,8 +275,12 @@ fun spawnTile() {
 
                     if (nextTile.frozen == 0 && tile.value == nextTile.value) {
                         // merge hợp lệ
-                        val mergedValue = tile.value * 2
+                        var mergedValue = tile.value * 2
+                        if(doubleNextMerge==true){
+                            mergedValue*=2
+                        }
                         score += mergedValue
+//--------------------------------Logic Merge double Value--------------------------------------------
 
                         mergedList.add(Tile(mergedValue, 0))
 
@@ -308,6 +323,7 @@ fun spawnTile() {
                 board.addMoveAnim(action.value, index, fromC, index, toC)
 
                 if (action.merged) {
+                    Gdx.input.vibrate(100)
                     board.addExplosion(index, toC)
                     board.addMergeAnim(index, toC, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
@@ -318,6 +334,7 @@ fun spawnTile() {
                 board.addMoveAnim(action.value, fromR, index, toR, index)
 
                 if (action.merged) {
+                    Gdx.input.vibrate(100)
                     board.addExplosion(toR, index)
                     board.addMergeAnim(toR, index, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)

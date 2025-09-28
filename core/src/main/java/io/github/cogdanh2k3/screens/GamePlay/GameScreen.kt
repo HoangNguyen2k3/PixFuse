@@ -1,10 +1,12 @@
 package io.github.cogdanh2k3.screens.GamePlay
 
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.InputMultiplexer
 import com.badlogic.gdx.ScreenAdapter
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
+import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
@@ -24,13 +26,20 @@ import io.github.cogdanh2k3.screens.WinScreen
 import io.github.cogdanh2k3.utils.FontUtils
 import io.github.cogdanh2k3.utils.InputHandler
 import kotlin.math.abs
+import com.badlogic.gdx.scenes.scene2d.InputEvent
+import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
+import com.badlogic.gdx.scenes.scene2d.ui.Table
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
+import io.github.cogdanh2k3.ui.BoosterMessage
 
 class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? = null) : ScreenAdapter() {
     public var BOARD_SIZE = if(levelData==null){4}else{levelData.sizeBoard}
     private val camera = OrthographicCamera()
     // Sử dụng ExtendViewport để tự động scale theo tỷ lệ màn hình
     // Min size cho portrait, max size cho landscape
-    private val viewport = ExtendViewport(480f, 800f, 600f, 1000f, camera)
+    val viewport = ExtendViewport(480f, 800f, 600f, 1000f, camera)
     private val batch = SpriteBatch()
     private val shapeRenderer = ShapeRenderer()
 
@@ -39,18 +48,17 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         data.setScale(getScaleFactor() * 2.0f)
         color = Color(0.45f, 0.42f, 0.39f, 1f)
     }
-/*    private val titleFont = BitmapFont().apply {
-        data.setScale(getScaleFactor() * 2.0f)
-        color = Color(0.45f, 0.42f, 0.39f, 1f)
-    }*/
-    private val scoreFont = FontUtils.loadCustomFont(12, Color.WHITE).apply {
+    private val scoreFont = FontUtils.loadCustomFont(18, Color.WHITE)
+        //.apply
+/*    {
         data.setScale(getScaleFactor() * 1.5f)
         color = Color.WHITE
-    }
-    private val labelFont = FontUtils.loadCustomFont(12, Color.WHITE).apply {
+    }*/
+    private val labelFont = FontUtils.loadCustomFont(18, Color.WHITE)
+/*        .apply {
         data.setScale(getScaleFactor() * 0.8f)
         color = Color(0.7f, 0.7f, 0.7f, 1f)
-    }
+    }*/
     private val buttonFont = FontUtils.loadCustomFont(12, Color.WHITE).apply {
         data.setScale(getScaleFactor() * 1.0f)
         color = Color.WHITE
@@ -61,7 +69,7 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
     }
 
     // Game objects
-    private var board = Board(BOARD_SIZE)
+    var board = Board(BOARD_SIZE)
     private val manager = GameManager(board,mode,levelData)
 
     private var score = 0
@@ -75,7 +83,18 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
     var showEndText = false
     var endText = ""
     var endTime = 0f
-
+    //Booster
+    // UI stage cho booster
+    private val stage = Stage(viewport, batch)
+    // Booster textures
+    private val booster1Tex = Texture("UI/booster1.png")
+    private val booster2Tex = Texture("UI/booster2.png")
+    private val booster3Tex = Texture("UI/booster3.png")
+    lateinit var boosterMessage: BoosterMessage
+    // Booster buttons
+    private lateinit var booster1Btn: ImageButton
+    private lateinit var booster2Btn: ImageButton
+    private lateinit var booster3Btn: ImageButton
     init {
         manager.InitData()
         manager.spawnTile()
@@ -90,6 +109,74 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
 
         setupBoard()
     }
+    override fun show() {
+        // Chuyển input sang stage để bấm booster được
+        Gdx.input.inputProcessor = stage
+
+        // Drawable
+        val booster1Drawable = TextureRegionDrawable(booster1Tex)
+        val booster2Drawable = TextureRegionDrawable(booster2Tex)
+        val booster3Drawable = TextureRegionDrawable(booster3Tex)
+
+        booster1Btn = ImageButton(booster1Drawable)
+        booster2Btn = ImageButton(booster2Drawable)
+        booster3Btn = ImageButton(booster3Drawable)
+
+        val radius = getResponsiveValue(40f)
+        val size = radius * 2
+        booster1Btn.setSize(size, size)
+        booster2Btn.setSize(size, size)
+        booster3Btn.setSize(size, size)
+        // Multiplexer: Stage + GestureDetector
+        val gestureDetector = GestureDetector(InputHandler(manager, this))
+        val multiplexer = InputMultiplexer()
+        multiplexer.addProcessor(stage)           // để click booster
+        multiplexer.addProcessor(gestureDetector) // để vuốt
+
+        Gdx.input.inputProcessor = multiplexer
+        val boosterTable = Table()
+        boosterTable.center() // căn giữa theo chiều ngang
+        boosterTable.bottom() // đặt nội dung table ở dưới
+       // boosterTable.setFillParent(true) // table full stage, nhưng nội dung xuống dưới
+       // boosterTable.setPosition((viewport.worldWidth - boosterTable.prefWidth) / 2f, getResponsiveValue(20f))
+        boosterTable.bottom()
+        boosterTable.pack() // Table tự tính kích thước vừa đủ nội dung
+        boosterTable.setPosition((viewport.worldWidth - boosterTable.width)/2f, getResponsiveValue(20f))
+// Thêm nút với padding
+        boosterTable.add(booster1Btn).size(size).pad(getResponsiveValue(15f))
+        boosterTable.add(booster2Btn).size(size).pad(getResponsiveValue(15f))
+        boosterTable.add(booster3Btn).size(size).pad(getResponsiveValue(15f))
+
+        stage.addActor(boosterTable)
+        boosterMessage = BoosterMessage(stage, boosterTable.y, viewport.worldWidth)
+        // Click events
+        booster1Btn.addListener(object : ClickListener() {
+            override fun clicked(event: com.badlogic.gdx.scenes.scene2d.InputEvent?, x: Float, y: Float) {
+                boosterMessage.show("Booster x2 Activated!")
+                manager.doubleNextMerge = true
+                // TODO: doubleNextMerge = true
+            }
+        })
+
+        booster2Btn.addListener(object : ClickListener() {
+            override fun clicked(event: com.badlogic.gdx.scenes.scene2d.InputEvent?, x: Float, y: Float) {
+                boosterMessage.show("Chọn một ô để xóa cả hàng")
+                manager.activeBombRowBooster = true
+            }
+        })
+
+        booster3Btn.addListener(object : ClickListener() {
+            override fun clicked(event: com.badlogic.gdx.scenes.scene2d.InputEvent?, x: Float, y: Float) {
+                if (manager.board.hasWall()) {
+                    boosterMessage.show("Chọn một WALL để xóa")
+                    manager.activeWallBooster = true
+                } else {
+                    boosterMessage.show("Không có WALL nào trên bản đồ!")
+                }
+            }
+        })
+    }
+
 
     private fun getScaleFactor(): Float {
         // Scale factor dựa trên kích thước màn hình
@@ -148,7 +235,7 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         if (mode is TimedMode) {
             mode.update(delta)   // <-- giảm thời gian mỗi frame
         }
-        drawEverything()
+        drawEverything(delta)
 
     }
 
@@ -194,7 +281,7 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
 
     }
 
-    private fun drawEverything() {
+    private fun drawEverything(delta: Float) {
         // Clear screen
         val bgColor = hsvToRgb(backgroundHue, 0.08f, 0.96f)
         Gdx.gl.glClearColor(bgColor.r, bgColor.g, bgColor.b, 1f)
@@ -209,7 +296,7 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         drawHeader()        // Box điểm số
         drawTargetBox()     // Box target
         drawPauseButton()   // <--- thêm dòng này
-        drawBoosterButtons();
+
         shapeRenderer.end()
 
         // ===== Draw text, board =====
@@ -219,11 +306,14 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         //drawScoreText()        // số điểm
         drawTargetText()       // target hoặc vô cực
         drawPauseButtonText()   // <--- và dòng này
-        drawBoosterButtonText()
+//        drawBoosterButtons(batch);
         board.draw(batch)      // grid
-        drawInstructions()     // text hướng dẫn
+        //drawInstructions()     // text hướng dẫn
         drawEndGameText()      // Win/Lose
         batch.end()
+        // Booster UI
+        stage.act(delta)
+        stage.draw()
     }
     // ======= HEADER (SCORE & BEST) =======
     private fun drawHeader() {
@@ -414,79 +504,6 @@ private fun drawInstructions() {
         shapeRenderer.circle(x + width - radius, y + radius, radius)
         shapeRenderer.circle(x + radius, y + height - radius, radius)
         shapeRenderer.circle(x + width - radius, y + height - radius, radius)
-    }
-
-/*    // Khai báo texture ở class
-    private lateinit var boosterTexture: Texture
-
-// Trong constructor hoặc create():
-    boosterTexture = Texture(Gdx.files.internal("button.png"))
-
-    private fun drawBoosterButtons(batch: SpriteBatch) {
-        val radius = getResponsiveValue(40f)
-        val marginBottom = getResponsiveValue(20f)
-        val spacing = getResponsiveValue(30f)
-
-        val totalWidth = radius * 2 * 3 + spacing * 2
-        val startX = (viewport.worldWidth - totalWidth) / 2f
-        val centerY = marginBottom + radius
-
-        // Kích thước vẽ (ảnh vuông nên lấy đường kính = radius*2)
-        val size = radius * 2f
-
-        // Booster 1
-        batch.draw(boosterTexture, startX, centerY - radius, size, size)
-
-        // Booster 2
-        batch.draw(boosterTexture, startX + radius * 2 + spacing, centerY - radius, size, size)
-
-        // Booster 3
-        batch.draw(boosterTexture, startX + radius * 4 + spacing * 2, centerY - radius, size, size)
-    }*/
-    private fun drawBoosterButtons() {
-        val radius = getResponsiveValue(40f)
-        val marginBottom = getResponsiveValue(20f)
-        val spacing = getResponsiveValue(30f)
-
-        val totalWidth = radius * 2 * 3 + spacing * 2
-        val startX = (viewport.worldWidth - totalWidth) / 2f
-        val centerY = marginBottom + radius
-
-        // Booster 1
-        shapeRenderer.color = Color(0.9f, 0.5f, 0.4f, 0.9f)
-        shapeRenderer.circle(startX + radius, centerY, radius)
-
-        // Booster 2
-        shapeRenderer.color = Color(0.4f, 0.8f, 0.5f, 0.9f)
-        shapeRenderer.circle(startX + radius * 3 + spacing, centerY, radius)
-
-        // Booster 3
-        shapeRenderer.color = Color(0.4f, 0.6f, 0.9f, 0.9f)
-        shapeRenderer.circle(startX + radius * 5 + spacing * 2, centerY, radius)
-    }
-    private fun drawBoosterButtonText() {
-        val radius = getResponsiveValue(40f)
-        val marginBottom = getResponsiveValue(20f)
-        val spacing = getResponsiveValue(30f)
-
-        val totalWidth = radius * 2 * 3 + spacing * 2
-        val startX = (viewport.worldWidth - totalWidth) / 2f
-        val centerY = marginBottom + radius
-
-        val labels = listOf("B1", "B2", "B3")
-        val positions = listOf(
-            startX + radius,
-            startX + radius * 3 + spacing,
-            startX + radius * 5 + spacing * 2
-        )
-
-        for (i in 0..2) {
-            val text = labels[i]
-            val layout = GlyphLayout(buttonFont, text)
-            val textX = positions[i] - layout.width / 2f
-            val textY = centerY + layout.height / 2f
-            buttonFont.draw(batch, layout, textX, textY)
-        }
     }
     private fun hsvToRgb(h: Float, s: Float, v: Float): Color {
         val c = v * s

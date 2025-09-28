@@ -74,18 +74,27 @@ class TargetMode(
         }
         return true
     }
-
+    private fun valueToRoman(value: Int): String {
+        if (value < 2) return "?"
+        // log2(value) = bậc (2=2^1, 4=2^2, 8=2^3, ...)
+        val level = (Math.log(value.toDouble()) / Math.log(2.0)).toInt()
+        val romans = listOf(
+            "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
+            "XI", "XII", "XIII", "XIV", "XV"
+        )
+        return if (level - 1 in romans.indices) romans[level - 1] else "?"
+    }
     override fun getTargetDescription(): String {
-        // Nếu có tên thì ghép (tên + số), nếu không thì chỉ số
         return if (targetNames.isNotEmpty()) {
             targetValues.mapIndexed { i, v ->
+                val roman = valueToRoman(v)
                 if (i < targetNames.size && targetNames[i].isNotEmpty())
-                    "${targetNames[i]} ($v)"
+                    "${targetNames[i]} ($roman)"
                 else
-                    v.toString()
+                    roman
             }.joinToString(", ")
         } else {
-            targetValues.joinToString(", ")
+            targetValues.joinToString(", ") { valueToRoman(it) }
         }
     }
 }

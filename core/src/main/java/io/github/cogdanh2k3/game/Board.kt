@@ -113,10 +113,40 @@ class Board(val size: Int) {
             grid[x][y].value = TILE_WALL
         }
     }
-/*    fun setTile(r: Int, c: Int, tile: Tile) {
-        grid[r][c] = tile
-    }*/
-
+    //-------------------BOOSTER-----------------------
+    fun hasWall(): Boolean {
+        for (r in 0 until size) {
+            for (c in 0 until size) {
+                if (grid[r][c].value == TILE_WALL) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    //Lấy tile khi click vào
+    fun getTileAt(x: Float, y: Float): Pair<Int, Int>? {
+        for (r in 0 until size) {
+            for (c in 0 until size) {
+                val (dx, dy) = gridToPos(r, c)
+                if (x >= dx && x <= dx + tileSize &&
+                    y >= dy && y <= dy + tileSize) {
+                    return Pair(r, c)
+                }
+            }
+        }
+        return null
+    }
+    fun clearRow(row: Int) {
+        for (c in 0 until size) {
+            val t = grid[row][c]
+            if (t.value != TILE_WALL) {   // bỏ qua wall
+                grid[row][c] = Tile()     // reset về ô trống
+                addExplosionBoom(row, c)      // hiệu ứng nổ (nếu muốn)
+            }
+        }
+    }
+    //--------------------------------------------------------------------------
     fun setTile(r: Int, c: Int, value: Int, frozen: Int = 0) {
         grid[r][c].value = value
         grid[r][c].frozen = frozen
