@@ -22,38 +22,37 @@ import io.github.cogdanh2k3.Mode.EndlessMode
 import io.github.cogdanh2k3.audio.SoundId
 import io.github.cogdanh2k3.audio.SoundManager
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
+import io.github.cogdanh2k3.utils.FontUtils
 
 class MenuScreen(val game: Main) : Screen {
 
     private val stage = Stage(ScreenViewport())
     private val skin: Skin = Skin()
-    private val background = Texture("titles/background.png")
-    private val logo = Texture("titles/logo.png")
-
+    private val background = Texture("titles/bg_game.png")
+    private val logo = Texture("titles/new_name.png")
+    private val bg_button  = Texture("UI/Button_main.png")
     init {
         SoundManager.loadAll()
         SoundManager.playMusic(SoundId.MUSIC)
         SaveManager.loadGameSave()
-        val buttonFont = BitmapFont().apply {
-            data.setScale(2.5f)
-            color = Color.WHITE
-        }
-        skin.add("default-font", buttonFont)
+        val button_font= FontUtils.loadCustomFont(50, Color.WHITE)
+        skin.add("default-font", button_font)
+// Dùng Button_main.png làm nền cho nút
+        val buttonDrawable = TextureRegionDrawable(bg_button)
 
-        val buttonTexture = createButtonTexture(300, 80, Color(0.2f, 0.2f, 0.4f, 0.8f))
-        val buttonHoverTexture = createButtonTexture(300, 80, Color(0.3f, 0.3f, 0.5f, 0.9f))
-        val buttonPressedTexture = createButtonTexture(300, 80, Color(0.1f, 0.1f, 0.3f, 0.9f))
+// Nếu muốn có hiệu ứng hover/nhấn thì tint lại từ cùng texture
+        val buttonHoverDrawable = TextureRegionDrawable(bg_button).tint(Color(1f, 1f, 0.9f, 1f)) // vàng nhạt
+        val buttonPressedDrawable = TextureRegionDrawable(bg_button).tint(Color(0.8f, 0.8f, 0.8f, 1f)) // xám
 
         val buttonStyle = TextButton.TextButtonStyle().apply {
-            font = buttonFont
+            font = button_font
             fontColor = Color.WHITE
-            overFontColor = Color(1f, 1f, 0.8f, 1f) // Màu vàng nhạt khi hover
-            downFontColor = Color(0.9f, 0.9f, 0.9f, 1f)
+            overFontColor = Color.YELLOW
+            downFontColor = Color.LIGHT_GRAY
 
-            // Thêm background cho button
-            up = TextureRegionDrawable(buttonTexture)
-            over = TextureRegionDrawable(buttonHoverTexture)
-            down = TextureRegionDrawable(buttonPressedTexture)
+            up = buttonDrawable
+            over = buttonHoverDrawable
+            down = buttonPressedDrawable
         }
         skin.add("default", buttonStyle)
 
@@ -126,12 +125,13 @@ class MenuScreen(val game: Main) : Screen {
         game.batch.begin()
         game.batch.draw(background, 0f, 0f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
 
-        val logoWidth = Gdx.graphics.width * 0.5f
+        val scale = 0.85f // scale to hơn (70% chiều rộng màn hình)
+        val logoWidth = Gdx.graphics.width * scale
         val logoHeight = logo.height * (logoWidth / logo.width)
-        val logoX = (Gdx.graphics.width - logoWidth) / 2f
-        val logoY = Gdx.graphics.height - logoHeight - 50f
-        game.batch.draw(logo, logoX, logoY, logoWidth, logoHeight)
+        val logoX = (Gdx.graphics.width - logoWidth) / 2
+        val logoY = Gdx.graphics.height - logoHeight - 150f // dịch xuống thêm 100px
 
+        game.batch.draw(logo, logoX, logoY, logoWidth, logoHeight)
         game.batch.end()
 
         stage.act(delta)

@@ -44,21 +44,24 @@ class TargetMode(
     override val data: DataGame = DataGame()
 
     override fun checkWin(board: Board, score: Int): Boolean {
-        // Kiểm tra tất cả targetValues đều xuất hiện
-        return targetValues.all { target ->
-            var found = false
-            for (r in 0 until board.size) {
-                for (c in 0 until board.size) {
-                    if (board.getTile(r, c).value == target) {
-                        found = true
-                        break
-                    }
-                }
-                if (found) break
+        // Đếm số lần xuất hiện của mỗi giá trị trên board
+        val boardCounts = mutableMapOf<Int, Int>()
+        for (r in 0 until board.size) {
+            for (c in 0 until board.size) {
+                val v = board.getTile(r, c).value
+                if (v > 0) boardCounts[v] = (boardCounts[v] ?: 0) + 1
             }
-            found
+        }
+
+        // Đếm số lần yêu cầu trong targetValues
+        val targetCounts = targetValues.groupingBy { it }.eachCount()
+
+        // So sánh: board phải có đủ số lượng cho từng giá trị target
+        return targetCounts.all { (value, needed) ->
+            (boardCounts[value] ?: 0) >= needed
         }
     }
+
 
     override fun checkLose(board: Board, score: Int): Boolean {
         if (board.getEmptyCells().isNotEmpty()) return false

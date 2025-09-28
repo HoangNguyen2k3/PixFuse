@@ -6,7 +6,8 @@ import com.badlogic.gdx.math.Interpolation
 data class Tile(
     var value: Int = 0,       // 0 = trống, -1 = tường, >0 = giá trị tile
     var frozen: Int = 0,       // >0 = số lần cần vuốt để phá băng
-    var bomb: Boolean = false, // true = có bom, false = không có bom
+    var isBoom: Boolean = false, // true = có bom, false = không có bom
+    var boomCounter: Int = 0
 )
 /*
 class Tile(

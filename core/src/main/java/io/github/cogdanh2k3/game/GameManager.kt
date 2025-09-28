@@ -25,32 +25,68 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
             board.InitGrid()
         }
     }
-/*
-    fun spawnTile() {
-        if (hasWon || hasLost) return
-        val empty = board.getEmptyCells()
-        if (empty.isNotEmpty()) {
-            val (r, c) = empty.random()
-            val value = if (Random.nextFloat() < 0.9f) 2 else 4
-            board.setTile(r, c, value)
-            board.addSpawnAnim(r, c, value)
-        }
-    }
-*/
-fun spawnTile() {
+/*fun spawnTile() {
     if (hasWon || hasLost) return
     val empty = board.getEmptyCells()
     if (empty.isNotEmpty()) {
         val (r, c) = empty.random()
         val value = if (Random.nextFloat() < 0.9f) 2 else 4
 
-        // Xác suất spawn tile đóng băng (ví dụ 20%)
+        // Xác suất spawn tile đóng băng (20%)
         val frozen = if (Random.nextFloat() < 0.2f) 2 else 0
 
-        board.setTile(r, c, value, frozen)
+        // Xác suất spawn trap boom (10%)
+        val isBoom = Random.nextFloat() < 0.1f
+
+        board.setTile(r, c, Tile(
+            value = value,
+            frozen = frozen,
+            isBoom = isBoom,
+            boomCounter = if (isBoom) 2 else 0
+        ))
         board.addSpawnAnim(r, c, value)
     }
+}*/
+fun spawnTile() {
+    if (hasWon || hasLost) return
+    val empty = board.getEmptyCells()
+    if (empty.isEmpty()) return
+
+    val (r, c) = empty.random()
+
+    // an toàn: double-check ô vẫn trống (defensive)
+    val existing = board.getTile(r, c)
+    if (existing.value != 0 || existing.frozen != 0 || existing.isBoom) {
+        // shouldn't happen, log và abort
+        com.badlogic.gdx.Gdx.app.log("spawnTile", "skipping spawn: cell not empty at $r,$c")
+        return
+    }
+
+    val value = if (Random.nextFloat() < 0.9f) 2 else 4
+    val p = Random.nextFloat()
+
+    when {
+        p < 0.10f -> {
+            // BOOM (10%)
+            val tile = Tile(value = value, frozen = 0, isBoom = true, boomCounter = 2)
+            board.setTile(r, c, tile)
+            board.addSpawnAnim(r, c, value)
+        }
+        p < 0.20f -> {
+            // FROZEN (20%)
+            val tile = Tile(value = value, frozen = 2, isBoom = false, boomCounter = 0)
+            board.setTile(r, c, tile)
+            board.addSpawnAnim(r, c, value)
+        }
+        else -> {
+            // NORMAL
+            val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0)
+            board.setTile(r, c, tile)
+            board.addSpawnAnim(r, c, value)
+        }
+    }
 }
+
     fun update() {
         if(hasWon||hasLost) return
         if (isMoved) {
@@ -109,7 +145,7 @@ fun spawnTile() {
 
         if (moved) {
             SoundManager.playSfx(SoundId.SWOOSH)
-            reduceFrozenTiles() // ✅ chỉ giảm khi có movement thật
+            reduceSpecialTiles() // ✅ chỉ giảm khi có movement thật
         }
         isMoved = moved
     }
@@ -131,23 +167,55 @@ fun spawnTile() {
 
         if (moved) {
             SoundManager.playSfx(SoundId.SWOOSH)
-            reduceFrozenTiles()
+            reduceSpecialTiles()
         }
         isMoved = moved
     }
     // ✅ Hàm giảm frozen sau khi move
-    private fun reduceFrozenTiles() {
+    private fun reduceSpecialTiles() {
         for (r in 0 until board.size) {
             for (c in 0 until board.size) {
                 val t = board.getTile(r, c)
+
                 if (t.frozen > 0) {
-                    board.setTile(r, c, t.copy(frozen = t.frozen - 1))
+                    val newFrozen = t.frozen - 1
+                    board.setTile(r, c, t.copy(frozen = newFrozen))
+                    if (newFrozen == 0) {
+                        // 👉 chỗ này: tile vừa tan băng
+                        board.addExplosionIceThaw(r, c) // hoặc hiệu ứng crack ice
+                        //SoundManager.playSfx(SoundId.UNFREEZE)
+                    }
+                }
+
+                // Xử lý boom
+                if (t.isBoom) {
+                    if (t.boomCounter > 0) {
+                        t.boomCounter--
+                        board.setTile(r, c, t)
+                    } else {
+                        // Hết thời gian → nổ
+                        explode(r, c)
+                    }
                 }
             }
         }
     }
+    private fun explode(r: Int, c: Int) {
+        for (dr in -1..1) {
+            for (dc in -1..1) {
+                val nr = r + dr
+                val nc = c + dc
 
+                if (nr in 0 until board.size && nc in 0 until board.size) {
+                    board.setTile(nr, nc, Tile(0)) // xóa ô
+                    board.addExplosionBoom(nr, nc)
+                }
+            }
+        }
 
+        board.addExplosionBoom(r, c)
+//        SoundManager.playSfx(SoundId.EXPLODE)
+    }
     private fun processLine(
         line: List<Tile>,
         reversed: Boolean,

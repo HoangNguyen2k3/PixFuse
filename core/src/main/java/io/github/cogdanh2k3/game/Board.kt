@@ -6,30 +6,12 @@ import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
-import io.github.cogdanh2k3.Anim.ExplosionMerge
 import io.github.cogdanh2k3.Animation
-import io.github.cogdanh2k3.screens.GamePlay.GameScreen
-import io.github.cogdanh2k3.utils.FontUtils
 import io.github.cogdanh2k3.utils.SpriteSheetAnimation
 import kotlin.math.sin
-import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import com.badlogic.gdx.input.GestureDetector
-import com.badlogic.gdx.math.Interpolation
-import com.badlogic.gdx.math.Vector3
-import com.badlogic.gdx.utils.viewport.ExtendViewport
-import io.github.cogdanh2k3.DataGame.LevelData
-import io.github.cogdanh2k3.Main
-import io.github.cogdanh2k3.Mode.GameMode
-import io.github.cogdanh2k3.Mode.TargetMode
-import io.github.cogdanh2k3.Mode.TimedMode
-import io.github.cogdanh2k3.game.Board
-import io.github.cogdanh2k3.game.GameManager
-import io.github.cogdanh2k3.screens.WinScreen
-import io.github.cogdanh2k3.utils.InputHandler
-import sun.java2d.SunGraphicsEnvironment.getScaleFactor
-import kotlin.math.abs
+import io.github.cogdanh2k3.utils.FontUtils
+
 class Board(val size: Int) {
     private val grid: Array<Array<Tile>> = Array(size) { Array(size) { Tile() } }
     var tileImages = mapOf(
@@ -45,7 +27,9 @@ class Board(val size: Int) {
         1024 to Texture("titles/Pokemon/abra_1024.png"),
         2048 to Texture("titles/Pokemon/venonat_2048.png"),
     )
-    private val iceTileTextures = Texture("titles/tile_ice.png")
+    val txt_font= FontUtils.loadCustomFont(30, Color.BLACK)
+    private val iceTileTextures = Texture("titles/ice_tile.png")
+    private val bombTileTextures = Texture("titles/bomb.png")
     // ---- Explosion animation ----
     private val explosionSheet = SpriteSheetAnimation(
         "effects/explosion.png",
@@ -60,13 +44,41 @@ class Board(val size: Int) {
         val (dx, dy) = gridToPos(row, col)
         explosions.add(Explosion(dx, dy))
     }
+    //----------Explosion Boom-----------------
+    private val explosionBoomSheet = SpriteSheetAnimation(
+        "effects/explosionboom.png",
+        rows = 8, cols = 10,
+        frameDuration = 0.01f,
+        playMode = com.badlogic.gdx.graphics.g2d.Animation.PlayMode.NORMAL
+    )
+    data class ExplosionBoom(val x: Float, val y: Float, var time: Float = 0f)
+    private val explosionsBoom = mutableListOf<ExplosionBoom>()
 
+    fun addExplosionBoom(row: Int, col: Int) {
+        val (dx, dy) = gridToPos(row, col)
+        explosionsBoom.add(ExplosionBoom(dx, dy))
+    }
+    //-------------Thaw Ice-------------------
+    private val explosionThawSheet = SpriteSheetAnimation(
+        "effects/ice_broken.png",
+        rows = 4, cols = 4,
+        frameDuration = 0.05f,
+        playMode = com.badlogic.gdx.graphics.g2d.Animation.PlayMode.NORMAL
+    )
+    data class ExplosionIceThaw(val x: Float, val y: Float, var time: Float = 0f)
+    private val explosionsIceThaw = mutableListOf<ExplosionIceThaw>()
+
+    fun addExplosionIceThaw(row: Int, col: Int) {
+        val (dx, dy) = gridToPos(row, col)
+        explosionsIceThaw.add(ExplosionIceThaw(dx, dy))
+    }
     // ---- Merge animation ----
     data class MergeAnim(val row: Int, val col: Int, val value: Int, var time: Float = 0f)
     private val mergeAnimations = mutableListOf<MergeAnim>()
     fun addMergeAnim(row: Int, col: Int, value: Int) {
         mergeAnimations.add(MergeAnim(row, col, value, 0f))
     }
+
 
     // Texture trắng 1x1 để fill màu
     private val whiteTexture: Texture
@@ -101,9 +113,9 @@ class Board(val size: Int) {
             grid[x][y].value = TILE_WALL
         }
     }
-    fun setTile(r: Int, c: Int, tile: Tile) {
+/*    fun setTile(r: Int, c: Int, tile: Tile) {
         grid[r][c] = tile
-    }
+    }*/
 
     fun setTile(r: Int, c: Int, value: Int, frozen: Int = 0) {
         grid[r][c].value = value
@@ -119,7 +131,7 @@ class Board(val size: Int) {
         for (r in 0 until size) for (c in 0 until size) if (grid[r][c] == 0) res.add(r to c)
         return res
     }*/
-    fun getEmptyCells(): List<Pair<Int, Int>> {
+/*    fun getEmptyCells(): List<Pair<Int, Int>> {
         val result = mutableListOf<Pair<Int, Int>>()
         for (r in 0 until size) {
             for (c in 0 until size) {
@@ -129,7 +141,35 @@ class Board(val size: Int) {
             }
         }
         return result
+    }*/
+// atomic set
+fun setTile(r: Int, c: Int, tile: Tile) {
+    grid[r][c] = tile
+}
+
+    // convenience overload (tạo Tile mới giữ nguyên các giá trị khác)
+    fun setTile(r: Int, c: Int, value: Int, frozen: Int = 0, isBoom: Boolean = false, boomCounter: Int = 0) {
+        grid[r][c].value = value
+        grid[r][c].frozen = frozen
+        grid[r][c].isBoom = isBoom
+        grid[r][c].boomCounter = boomCounter
     }
+
+    // get empty cells — chỉ những ô "thật sự trống"
+    fun getEmptyCells(): List<Pair<Int, Int>> {
+        val result = mutableListOf<Pair<Int, Int>>()
+        for (r in 0 until size) {
+            for (c in 0 until size) {
+                val t = grid[r][c]
+                // trống nghĩa là value == 0 và không phải wall, không phải boom, không đang frozen
+                if (t.value == 0 && t.value != TILE_WALL && t.frozen == 0 && !t.isBoom) {
+                    result.add(r to c)
+                }
+            }
+        }
+        return result
+    }
+
     private fun gridToPos(row: Int, col: Int): Pair<Float, Float> {
         val drawX = x + col * (tileSize + padding)
         val drawY = y + (size - 1 - row) * (tileSize + padding)
@@ -217,12 +257,34 @@ class Board(val size: Int) {
 
                     // Vẽ số lượt rã đông còn lại
                     val frozenText = v.frozen.toString()
-                    val layout = GlyphLayout(labelFont, frozenText)
+                    val layout = GlyphLayout(txt_font, frozenText)
                     val textX = dx + (tileSize - layout.width) / 2f
                     val textY = dy + (tileSize + layout.height) / 2f
 
-                    labelFont.color = Color.BLACK  // chữ đen cho dễ nhìn
-                    labelFont.draw(batch, layout, textX, textY)
+                    txt_font.color = Color.BLACK  // chữ đen cho dễ nhìn
+                    txt_font.draw(batch, layout, textX, textY)
+                }
+                if (v.isBoom) {
+                    // Vẽ tile boom (màu đỏ + chữ B)
+                    batch.color = Color(1f, 1f, 1f, 1f)
+                    batch.draw(bombTileTextures, dx, dy, tileSize/2, tileSize/2)
+                    batch.color = Color.WHITE
+
+/*                    val boomText = "B"
+                    val layout = GlyphLayout(labelFont, boomText)
+                    val textX = dx + (tileSize - layout.width) / 2f
+                    val textY = dy + (tileSize + layout.height) / 2f
+                    labelFont.color = Color.YELLOW
+                    labelFont.draw(batch, layout, textX, textY)*/
+
+                    // Vẽ số lượt còn lại
+                    val counterText = v.boomCounter.toString()
+                    val layout2 = GlyphLayout(txt_font, counterText)
+                    val textX2 = dx + (tileSize - layout2.width) / 2f
+                    val textY2 = dy + (tileSize + layout2.height) / 2f
+                    txt_font.color = Color.BLACK
+                    txt_font.draw(batch, layout2, textX2, textY2)
+                    continue
                 }
 
             }
@@ -264,6 +326,34 @@ class Board(val size: Int) {
             batch.draw(frame, e.x - offset, e.y - offset, size, size)
             if (explosionSheet.isAnimationFinished(e.time)) {
                 itExpl.remove()
+            }
+        }
+        // ---- 6. Vẽ explosion bomb----
+        val boomexp = explosionsBoom.iterator()
+        while (boomexp.hasNext()) {
+            val e = boomexp.next()
+            e.time += dt
+            val frame = explosionBoomSheet.getFrameAt(e.time, looping = false)
+            val size = tileSize * 1.2f
+            val offset = (size - tileSize) / 2
+
+            batch.draw(frame, e.x - offset, e.y - offset, size, size)
+            if (explosionBoomSheet.isAnimationFinished(e.time)) {
+                boomexp.remove()
+            }
+        }
+        // ---- 7. Vẽ ice thaw ----
+        val iceThaw = explosionsIceThaw.iterator()
+        while (iceThaw.hasNext()) {
+            val e = iceThaw.next()
+            e.time += dt
+            val frame = explosionThawSheet.getFrameAt(e.time, looping = false)
+            val size = tileSize * 1.2f
+            val offset = (size - tileSize) / 2
+
+            batch.draw(frame, e.x - offset, e.y - offset, size, size)
+            if (explosionBoomSheet.isAnimationFinished(e.time)) {
+                iceThaw.remove()
             }
         }
     }

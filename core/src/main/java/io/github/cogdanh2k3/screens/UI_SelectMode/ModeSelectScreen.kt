@@ -24,7 +24,7 @@ import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 import io.github.cogdanh2k3.utils.FontUtils
 
 class ModeSelectScreen(val game: Main) : Screen {
-
+    private val background = Texture("titles/bg_game.png")
     private val stage = Stage(ScreenViewport())
     private val skin = Skin()
 
@@ -120,13 +120,13 @@ class ModeSelectScreen(val game: Main) : Screen {
         root.add(titleLabel).expandX().center().pad(10f).colspan(1)
         root.row()
 // Khoảng trống
-        root.add().height(50f).colspan(2).row()
+        root.add().height(100f).colspan(2).row()
 
 // Các nút: chiếm cả 2 cột
-        root.add(classicButton).colspan(2).width(900f).height(180f).pad(20f).row()
-        root.add(endlessButton).colspan(2).width(900f).height(180f).pad(20f).row()
-        root.add(mode3Button).colspan(2).width(900f).height(180f).pad(20f).row()
-        root.add(mode4Button).colspan(2).width(900f).height(180f).pad(20f).row()
+        root.add(classicButton).colspan(2).width(1000f).height(200f).pad(40f).row()
+        root.add(endlessButton).colspan(2).width(1000f).height(200f).pad(40f).row()
+        root.add(mode3Button).colspan(2).width(1000f).height(200f).pad(/* pad = */ 40f).row()
+        root.add(mode4Button).colspan(2).width(1000f).height(200f).pad(40f).row()
     }
 
     private fun createButtonTexture(width: Int, height: Int, color: Color): Texture {
@@ -142,7 +142,12 @@ class ModeSelectScreen(val game: Main) : Screen {
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
-
+        game.batch.begin()
+        game.batch.draw(background, 0f, 0f,
+            Gdx.graphics.width.toFloat(),
+            Gdx.graphics.height.toFloat()
+        )
+        game.batch.end()
         stage.act(delta)
         stage.draw()
     }
