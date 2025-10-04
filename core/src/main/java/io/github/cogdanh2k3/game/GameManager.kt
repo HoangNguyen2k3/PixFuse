@@ -73,19 +73,19 @@ fun spawnTile() {
     when {
         p < 0.10f -> {
             // BOOM (10%)
-            val tile = Tile(value = value, frozen = 0, isBoom = true, boomCounter = 2,isThunder = false, thunderCounter = 0)
+            val tile = Tile(value = value, frozen = 0, isBoom = true, boomCounter = 3,isThunder = false, thunderCounter = 0)
             board.setTile(r, c, tile)
             board.addSpawnAnim(r, c, value)
         }
         p < 0.20f -> {
             // FROZEN (20%)
-            val tile = Tile(value = value, frozen = 2, isBoom = false, boomCounter = 0, isThunder = false, thunderCounter = 0)
+            val tile = Tile(value = value, frozen = 3, isBoom = false, boomCounter = 0, isThunder = false, thunderCounter = 0)
             board.setTile(r, c, tile)
             board.addSpawnAnim(r, c, value)
         }
-        p < 0.40f -> {
+        p < 0.30f -> {
             // FROZEN (20%)
-            val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0,isThunder = true, thunderCounter = 2)
+            val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0,isThunder = true, thunderCounter = 3)
             board.setTile(r, c, tile)
             board.addSpawnAnim(r, c, value)
         }
@@ -156,15 +156,19 @@ fun spawnTile() {
             for (c in 0 until board.size) {
                 val oldTile = board.getTile(r, c)
                 val newTile = final[c]
-                if (oldTile.value != newTile.value) { // ❌ bỏ so frozen
+                // Phát hiện movement: so sánh value + flags có thể gây false positive nếu chỉ so value
+                if (oldTile.value != newTile.value || oldTile.isBoom != newTile.isBoom
+                    || oldTile.isThunder != newTile.isThunder || oldTile.boomCounter != newTile.boomCounter
+                    || oldTile.thunderCounter != newTile.thunderCounter) {
                     moved = true
                 }
-                board.setTile(r, c, newTile.copy(frozen = oldTile.frozen)) // giữ nguyên frozen
+                // Giữ frozen của ô cũ (như logic cũ) nhưng dùng các flag từ newTile
+                board.setTile(r, c, newTile.copy(frozen = oldTile.frozen))
             }
         }
 
         if (moved) {
-            if(doubleNextMerge==true){
+            if (doubleNextMerge == true) {
                 doubleNextMerge = false
             }
             SoundManager.playSfx(SoundId.SWOOSH)
@@ -181,14 +185,16 @@ fun spawnTile() {
             for (r in 0 until board.size) {
                 val oldTile = board.getTile(r, c)
                 val newTile = final[r]
-                if (oldTile.value != newTile.value) {
+                if (oldTile.value != newTile.value || oldTile.isBoom != newTile.isBoom
+                    || oldTile.isThunder != newTile.isThunder || oldTile.boomCounter != newTile.boomCounter
+                    || oldTile.thunderCounter != newTile.thunderCounter) {
                     moved = true
                 }
                 board.setTile(r, c, newTile.copy(frozen = oldTile.frozen))
             }
         }
         if (moved) {
-            if(doubleNextMerge==true){
+            if (doubleNextMerge == true) {
                 doubleNextMerge = false
             }
             SoundManager.playSfx(SoundId.SWOOSH)
@@ -196,72 +202,95 @@ fun spawnTile() {
         }
         isMoved = moved
     }
-    // ✅ Hàm giảm frozen sau khi move
+
+    // ✅ Hàm giảm frozen / countdown sau khi move
     private fun reduceSpecialTiles() {
         for (r in 0 until board.size) {
             for (c in 0 until board.size) {
                 val t = board.getTile(r, c)
 
+                // giảm frozen (chỉ ở đây)
                 if (t.frozen > 0) {
                     val newFrozen = t.frozen - 1
                     board.setTile(r, c, t.copy(frozen = newFrozen))
                     if (newFrozen == 0) {
-                        // 👉 chỗ này: tile vừa tan băng
                         SoundManager.playVibration(200)
-                        board.addExplosionIceThaw(r, c) // hoặc hiệu ứng crack ice
-                        //SoundManager.playSfx(SoundId.UNFREEZE)
+                        board.addExplosionIceThaw(r, c)
                     }
                 }
 
-                // Xử lý boom
+                // Xử lý boom (đếm ngược, nổ khi = 0)
                 if (t.isBoom) {
-                    if (t.boomCounter > 0) {
-                        t.boomCounter--
-                        board.setTile(r, c, t)
-                    } else {
-                        // Hết thời gian → nổ
+                    val newBoom = t.boomCounter - 1
+                    if (newBoom <= 0) {
+                        // nổ khi hết counter
                         explode(r, c)
+                    } else {
+                        board.setTile(r, c, t.copy(boomCounter = newBoom))
                     }
                 }
+
+                // Xử lý thunder: nếu countdown về 0 mà không được merge thì CHỈ mất trạng thái thunder (không kích hoạt buff)
                 if (t.isThunder) {
-                    t.thunderCounter--
-                    if (t.thunderCounter <= 0) {
-                        triggerThunderBuff(r, c)
+                    val newThunder = t.thunderCounter - 1
+                    if (newThunder <= 0) {
+                        board.setTile(r, c, t.copy(isThunder = false, thunderCounter = 0))
+                    } else {
+                        board.setTile(r, c, t.copy(thunderCounter = newThunder))
                     }
                 }
             }
         }
     }
-    private fun triggerThunderBuff(r: Int, c: Int) {
-        val thunderTile = board.getTile(r, c)
 
-        // Thêm hiệu ứng thunder nổ (animation riêng)
+    private fun triggerThunderBuff(r: Int, c: Int) {
+        if (r !in 0 until board.size || c !in 0 until board.size) return
+
+        val thunderTile = board.getTile(r, c)
         board.addExplosionThunder(r, c)
-        //SoundManager.playSfx(SoundId.THUNDER)
         SoundManager.playVibration(250)
 
-        for (i in 0 until board.size) {
-            val rowTile = board.getTile(r, i)
-            val colTile = board.getTile(i, c)
+        val toDouble = mutableSetOf<Pair<Int, Int>>() // lưu tất cả ô sẽ nhân đôi
 
-            // buff hàng
-            if (rowTile.value > 0 && !rowTile.isThunder && rowTile.value != TILE_WALL) {
-                rowTile.value += 1
+        // --- Hàng ---
+        for (i in 0 until board.size) {
+            if (i == c) continue // bỏ trung tâm (xử lý riêng)
+            val tile = board.getTile(r, i)
+            if (tile.value > 0 && tile.value != TILE_WALL) {
+                toDouble.add(r to i)
+            }
+            if(tile.value!=TILE_WALL){
                 board.addExplosionThunder(r, i)
             }
+        }
 
-            // buff cột
-            if (colTile.value > 0 && !colTile.isThunder && colTile.value != TILE_WALL) {
-                colTile.value += 1
+        // --- Cột ---
+        for (i in 0 until board.size) {
+            if (i == r) continue
+            val tile = board.getTile(i, c)
+            if (tile.value > 0 && tile.value != TILE_WALL) {
+                toDouble.add(i to c)
+            }
+            if(tile.value!=TILE_WALL){
                 board.addExplosionThunder(i, c)
             }
         }
 
-        // Thunder tự hủy sau khi nổ
-        thunderTile.value = 0
-        thunderTile.isThunder = false
-        thunderTile.thunderCounter = 0
+        // --- Nhân giá trị thật ---
+        for ((rr, cc) in toDouble) {
+            val t = board.getTile(rr, cc)
+            val newVal = t.value * 2
+            board.setTile(rr, cc, t.copy(value = newVal))
+
+        }
+
+        // Trung tâm thunder tile -> giữ lại, bỏ trạng thái thunder
+        val center = board.getTile(r, c)
+        board.setTile(r, c, center.copy(isThunder = false, thunderCounter = 0))
     }
+
+
+
     private fun explode(r: Int, c: Int) {
         for (dr in -1..1) {
             for (dc in -1..1) {
@@ -272,18 +301,18 @@ fun spawnTile() {
                     val t = board.getTile(nr, nc)
                     // CHỈ xóa/hiệu ứng nếu ô không phải wall
                     if (t.value != TILE_WALL) {
-                        board.setTile(nr, nc, Tile(0)) // xóa ô
-                        board.addExplosionBoom(nr, nc) // hiệu ứng nổ
+                        board.setTile(nr, nc, Tile(0))
+                        board.addExplosionBoom(nr, nc)
                     }
                 }
             }
         }
 
         board.addExplosionBoom(r, c)
-        //Gdx.input.vibrate(300)
         SoundManager.playVibration(300)
 //        SoundManager.playSfx(SoundId.EXPLODE)
     }
+
     private fun processLine(
         line: List<Tile>,
         reversed: Boolean,
@@ -294,17 +323,14 @@ fun spawnTile() {
         val work = if (reversed) line.reversed() else line
         val final = work.map { it.copy() }.toMutableList()
 
-        data class MoveAction(val from: Int, val to: Int, val value: Int, val merged: Boolean)
+        data class MoveAction(val from: Int, val to: Int, val value: Int, val merged: Boolean, val isThunderMerged: Boolean = false)
         val moveActions = mutableListOf<MoveAction>()
 
         var start = 0
         while (start < work.size) {
             // Nếu là wall hoặc tile đóng băng thì bỏ qua (đóng băng coi như wall)
             if (work[start].value == TILE_WALL || work[start].frozen > 0) {
-                if (work[start].frozen > 0) {
-                    // giảm thời gian đóng băng
-                    final[start] = work[start].copy(frozen = work[start].frozen - 1)
-                }
+                // **KHÔNG giảm frozen ở đây** (việc giảm làm ở reduceSpecialTiles)
                 start++
                 continue
             }
@@ -328,21 +354,25 @@ fun spawnTile() {
 
                 // xử lý merge
                 if (i < compact.lastIndex) {
-                    val (nextTile, _) = compact[i + 1]
+                    val (nextTile, nextPos) = compact[i + 1]
 
                     if (nextTile.frozen == 0 && tile.value == nextTile.value) {
                         // merge hợp lệ
                         var mergedValue = tile.value * 2
-                        if(doubleNextMerge==true){
-                            mergedValue*=2
+                        if (doubleNextMerge == true) {
+                            mergedValue *= 2
                         }
                         score += mergedValue
-//--------------------------------Logic Merge double Value--------------------------------------------
 
-                        mergedList.add(Tile(mergedValue, 0))
+                        // kiểm tra xem có thunder trong 2 tile tham gia merge không
+                        val isThunderMerge = tile.isThunder || nextTile.isThunder
 
+                        // kết quả merge -> tile bình thường (không carry thunder/boom)
+                        //mergedList.add(Tile(mergedValue, 0))
+                        mergedList.add(Tile(mergedValue, 0, isThunder = isThunderMerge))
+                        // ghi moveActions: 2 action (đầu là from tile1 -> to, thứ hai là tile2 -> to (merged))
                         moveActions.add(MoveAction(compact[i].second, writeIndex, tile.value, merged = false))
-                        moveActions.add(MoveAction(compact[i + 1].second, writeIndex, nextTile.value, merged = true))
+                        moveActions.add(MoveAction(compact[i + 1].second, writeIndex, nextTile.value, merged = true, isThunderMerged = isThunderMerge))
 
                         writeIndex++
                         i += 2
@@ -370,7 +400,7 @@ fun spawnTile() {
 
         val output = if (reversed) final.reversed() else final
 
-        // --- Tạo animation ---
+        // --- Tạo animation + trigger thunder nếu merge có thunder ---
         for (action in moveActions) {
             if (action.from == action.to) continue
 
@@ -380,12 +410,16 @@ fun spawnTile() {
                 board.addMoveAnim(action.value, index, fromC, index, toC)
 
                 if (action.merged) {
-                    //Gdx.input.vibrate(100)
                     SoundManager.playVibration(100)
                     board.addExplosion(index, toC)
                     board.addMergeAnim(index, toC, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
                     mode.specialEffect()
+
+                    // Nếu merge này bao gồm thunder => trigger thunder buff tại ô merge (index,toC)
+                    if (action.isThunderMerged) {
+                        triggerThunderBuff(index, toC)
+                    }
                 }
             } else {
                 val fromR = if (reversed) board.size - 1 - action.from else action.from
@@ -393,18 +427,22 @@ fun spawnTile() {
                 board.addMoveAnim(action.value, fromR, index, toR, index)
 
                 if (action.merged) {
-                    //Gdx.input.vibrate(100)
                     SoundManager.playVibration(100)
                     board.addExplosion(toR, index)
                     board.addMergeAnim(toR, index, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
                     mode.specialEffect()
+
+                    if (action.isThunderMerged) {
+                        triggerThunderBuff(toR, index)
+                    }
                 }
             }
         }
 
         return output
     }
+
 
 
 

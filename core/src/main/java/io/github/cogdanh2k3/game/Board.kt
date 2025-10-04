@@ -202,7 +202,7 @@ fun setTile(r: Int, c: Int, tile: Tile) {
     }
 
     // get empty cells — chỉ những ô "thật sự trống"
-    fun getEmptyCells(): List<Pair<Int, Int>> {
+/*    fun getEmptyCells(): List<Pair<Int, Int>> {
         val result = mutableListOf<Pair<Int, Int>>()
         for (r in 0 until size) {
             for (c in 0 until size) {
@@ -214,8 +214,20 @@ fun setTile(r: Int, c: Int, tile: Tile) {
             }
         }
         return result
+    }*/
+    fun getEmptyCells(): List<Pair<Int, Int>> {
+        val result = mutableListOf<Pair<Int, Int>>()
+        for (r in 0 until size) {
+            for (c in 0 until size) {
+                val t = grid[r][c]
+                // Ô trống chỉ khi value == 0 và không có hiệu ứng đặc biệt
+                if (t.value == 0 && t.frozen == 0 && !t.isBoom && !t.isThunder) {
+                    result.add(r to c)
+                }
+            }
+        }
+        return result
     }
-
     private fun gridToPos(row: Int, col: Int): Pair<Float, Float> {
         val drawX = x + col * (tileSize + padding)
         val drawY = y + (size - 1 - row) * (tileSize + padding)
@@ -346,7 +358,8 @@ fun setTile(r: Int, c: Int, tile: Tile) {
                     txt_font.color = Color.BLACK
                     txt_font.draw(batch, layout3, textX3, textY3)
 
-                    continue // bỏ qua vẽ các lớp khác
+                    //continue // bỏ qua vẽ các lớp khác
+                    continue
                 }
 
             }
@@ -432,6 +445,31 @@ fun setTile(r: Int, c: Int, tile: Tile) {
             }
         }
     }
+    fun clearAllDebuffs(): Int {
+        var count = 0
+        for (x in 0 until size) {
+            for (y in 0 until size) {
+                val tile = grid[x][y]
+
+                // Kiểm tra nếu tile có bất kỳ hiệu ứng bất lợi nào
+                if (tile.isBoom || tile.frozen > 0) {
+                    // Xóa các hiệu ứng, giữ nguyên value
+                    if (tile.isBoom) {
+                        tile.isBoom = false
+                        tile.boomCounter = 0
+                    }
+                    if (tile.frozen > 0) {
+                        tile.frozen = 0
+                    }
+                    // Hiệu ứng nổ khi dọn tile
+                    addExplosion(x, y)
+                    count++
+                }
+            }
+        }
+        return count
+    }
+
 
     fun dispose() {
         tileImages.values.forEach { it.dispose() }

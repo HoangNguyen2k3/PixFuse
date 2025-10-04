@@ -29,7 +29,8 @@ class MenuScreen(val game: Main) : Screen {
 
     private val stage = Stage(ScreenViewport())
     private val skin: Skin = Skin()
-    private val background = Texture("titles/bg_game.png")
+    //private val background = Texture("titles/bg_game.png")
+    private val background = Texture("UI/bg_new.png")
     private val logo = Texture("titles/new_name.png")
     private val bg_button  = Texture("UI/Button_main.png")
     init {

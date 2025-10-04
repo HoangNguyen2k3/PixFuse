@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
@@ -91,11 +92,13 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
     private val booster1Tex = Texture("UI/booster1.png")
     private val booster2Tex = Texture("UI/booster2.png")
     private val booster3Tex = Texture("UI/booster3.png")
+    private val booster4Tex = Texture("UI/booster4.png") // 🔥 booster mới
     lateinit var boosterMessage: BoosterMessage
     // Booster buttons
     private lateinit var booster1Btn: ImageButton
     private lateinit var booster2Btn: ImageButton
     private lateinit var booster3Btn: ImageButton
+    private lateinit var booster4Btn: ImageButton
 
     private lateinit var helpButton: ImageButton
     private lateinit var helpPopup: HelpPopup
@@ -122,36 +125,45 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         val booster1Drawable = TextureRegionDrawable(booster1Tex)
         val booster2Drawable = TextureRegionDrawable(booster2Tex)
         val booster3Drawable = TextureRegionDrawable(booster3Tex)
+        val booster4Drawable = TextureRegionDrawable(booster4Tex)
 
         booster1Btn = ImageButton(booster1Drawable)
         booster2Btn = ImageButton(booster2Drawable)
         booster3Btn = ImageButton(booster3Drawable)
+        booster4Btn = ImageButton(booster4Drawable)
 
         val radius = getResponsiveValue(40f)
         val size = radius * 2
+
         booster1Btn.setSize(size, size)
         booster2Btn.setSize(size, size)
         booster3Btn.setSize(size, size)
+        booster4Btn.setSize(size, size)
         // Multiplexer: Stage + GestureDetector
+        // Multiplexer
         val gestureDetector = GestureDetector(InputHandler(manager, this))
-        val multiplexer = InputMultiplexer()
-        multiplexer.addProcessor(stage)           // để click booster
-        multiplexer.addProcessor(gestureDetector) // để vuốt
-
+        val multiplexer = InputMultiplexer(stage, gestureDetector)
         Gdx.input.inputProcessor = multiplexer
-        val boosterTable = Table()
-        boosterTable.center() // căn giữa theo chiều ngang
-        boosterTable.bottom() // đặt nội dung table ở dưới
-       // boosterTable.setFillParent(true) // table full stage, nhưng nội dung xuống dưới
-       // boosterTable.setPosition((viewport.worldWidth - boosterTable.prefWidth) / 2f, getResponsiveValue(20f))
-        boosterTable.bottom()
-        boosterTable.pack() // Table tự tính kích thước vừa đủ nội dung
-        boosterTable.setPosition((viewport.worldWidth - boosterTable.width)/2f, getResponsiveValue(20f))
-// Thêm nút với padding
-        boosterTable.add(booster1Btn).size(size).pad(getResponsiveValue(15f))
-        boosterTable.add(booster2Btn).size(size).pad(getResponsiveValue(15f))
-        boosterTable.add(booster3Btn).size(size).pad(getResponsiveValue(15f))
 
+        // ==== Table chứa 4 booster nằm ngang ====
+        val boosterTable = Table()
+        boosterTable.bottom()
+        boosterTable.center()
+        boosterTable.defaults().pad(getResponsiveValue(10f)) // padding cho tất cả cell
+
+// Thêm 4 nút
+        boosterTable.add(booster1Btn).size(size)
+        boosterTable.add(booster2Btn).size(size)
+        boosterTable.add(booster3Btn).size(size)
+        boosterTable.add(booster4Btn).size(size)
+
+// Không cần tự tính setPosition theo width, chỉ canh bottom và center
+        boosterTable.setFillParent(false)
+        boosterTable.setPosition(
+            viewport.worldWidth / 2f,
+            getResponsiveValue(80f),   // đẩy lên 80 thay vì 20
+            Align.center
+        )
         stage.addActor(boosterTable)
         boosterMessage = BoosterMessage(stage, boosterTable.y, viewport.worldWidth)
         // Click events
@@ -178,6 +190,16 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
                 } else {
                     boosterMessage.show("Không có WALL nào trên bản đồ!")
                 }
+            }
+        })
+        // ==== Booster 4: Xóa toàn bộ hiệu ứng bất lợi ====
+        booster4Btn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                val removedCount = manager.board.clearAllDebuffs() // 🔥 gọi hàm mới trong Board
+                if (removedCount > 0)
+                    boosterMessage.show("Đã loại bỏ toàn bộ hiệu ứng bất lợi!")
+                else
+                    boosterMessage.show("Không có hiệu ứng bất lợi nào!")
             }
         })
         // ========== HELP BUTTON ==========

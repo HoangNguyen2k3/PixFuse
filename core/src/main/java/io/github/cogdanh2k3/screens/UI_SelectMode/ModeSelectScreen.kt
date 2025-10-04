@@ -23,7 +23,8 @@ import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 import io.github.cogdanh2k3.utils.FontUtils
 
 class ModeSelectScreen(val game: Main) : Screen {
-    private val background = Texture("titles/bg_game.png")
+    //private val background = Texture("titles/bg_game.png")
+    private val background = Texture("UI/bg_new.png")
     private val stage = Stage(ScreenViewport())
     private val skin = Skin()
 
