@@ -15,6 +15,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import io.github.cogdanh2k3.DataGame.GameSave
+import io.github.cogdanh2k3.DataGame.IntPair
 import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.Mode.EndlessMode
@@ -129,7 +130,7 @@ class LevelSelectScreen(val game: Main) : Screen {
         // Thêm indicator vào root (bên dưới scrollPane)
         root.row().padTop(20f)
         root.add(indicatorTable).center()
-        currentWorld = SaveManager.loadGameSave().currentUnlockWorld;
+        currentWorld = SaveManager.gameSave.currentUnlockWorld;
     }
     private fun updateDots() {
         for ((index, dot) in dots.withIndex()) {
@@ -157,7 +158,7 @@ class LevelSelectScreen(val game: Main) : Screen {
         for (i in world.levels.indices) {
             val target = world.target_level[i+1]  // Int
             if (target != null) {
-                world.levels[i].target = target
+                world.levels[i].target = target.toMutableList()
                 world.levels[i].currentWorld = worldId
             }
         }
@@ -171,12 +172,13 @@ class LevelSelectScreen(val game: Main) : Screen {
         var temp1: Int = 0
         for (sizeB in world.wallData) {
             if (sizeB != null) {
-                // Tạo list có cùng số phần tử với sizeB, mặc định (0,0)
-                val tempWallData = MutableList(sizeB.size) { 0 to 0 }
+                // Tạo list có cùng số phần tử với sizeB, mặc định IntPair(0,0)
+                val tempWallData = MutableList(sizeB.size) { IntPair(0, 0) }
 
                 // Copy dữ liệu từ sizeB sang tempWallData
                 for (i in sizeB.indices) {
-                    tempWallData[i] = sizeB[i]
+                    val oldPair = sizeB[i]
+                    tempWallData[i] = IntPair(oldPair.first, oldPair.second)
                 }
 
                 world.levels[temp1].wallData = tempWallData

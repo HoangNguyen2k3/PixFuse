@@ -4,14 +4,14 @@ import com.badlogic.gdx.physics.box2d.World
 
 // Mỗi màn chơi
 data class LevelData(
-    val id: Int = 1,                 // id duy nhất
-    val indexInWorld: Int = 1,       // thứ tự trong world
+    val id: Int = 1,
+    val indexInWorld: Int = 1,
     var unlocked: Boolean = false,
     var stars: Int = 0,
-    var target: List<Int> = emptyList(),
+    var target: MutableList<Int> = mutableListOf(),           // ✅ đổi nè
     var currentWorld: Int = 1,
     var sizeBoard: Int = 4,
-    var wallData: List<Pair<Int, Int>> = emptyList<Pair<Int, Int>>()
+    var wallData: MutableList<IntPair> = mutableListOf()
 )
 
 // Một World gồm nhiều màn

@@ -8,7 +8,7 @@ object LevelManager {
     val levels = mutableListOf<LevelData>()
     val worlds = mutableListOf<WorldData>()
     fun loadLevels() {
-        val currentSave = SaveManager.loadGameSave()
+        val currentSave = SaveManager.gameSave
         levels.clear()
         worlds.clear()
         // Flatten tất cả level từ worlds -> levels
@@ -28,14 +28,15 @@ object LevelManager {
             next.unlocked = true
 
             // Cập nhật trong save
-            val gameSave = SaveManager.loadGameSave()
+            val gameSave = SaveManager.gameSave
             gameSave.currentUnlockWorld = next.currentWorld
             gameSave.currentUnlockLevel = next.indexInWorld
             val levelInSave = gameSave.worlds
                 .flatMap { it.levels }
                 .find { it.id == next.id }
             levelInSave?.unlocked = true
-            SaveManager.saveGame(gameSave)
+            SaveManager.gameSave = gameSave
+            SaveManager.saveGame()
         }
     }
 }

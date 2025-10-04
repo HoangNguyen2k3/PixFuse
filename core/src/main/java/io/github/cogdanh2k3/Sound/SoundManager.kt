@@ -3,6 +3,7 @@ package io.github.cogdanh2k3.audio
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.audio.Music
 import com.badlogic.gdx.audio.Sound
+import io.github.cogdanh2k3.DataGame.SaveManager
 
 object SoundManager {
     private val musics = mutableMapOf<SoundId, Music>()
@@ -48,7 +49,9 @@ object SoundManager {
     }
 
     fun playSfx(id: SoundId) {
-        sounds[id]?.play(sfxVolume)
+        if(SaveManager.gameSave.bool_sound){
+            sounds[id]?.play(sfxVolume)
+        }
     }
 
     fun updateMusicVolume(v: Float) {
@@ -59,7 +62,11 @@ object SoundManager {
     fun updateSfxVolume(v: Float) {
         sfxVolume = v.coerceIn(0f, 1f)
     }
-
+    fun playVibration(vibration: Int){
+        if(SaveManager.gameSave.bool_vibration){
+            Gdx.input.vibrate(vibration)
+        }
+    }
     fun dispose() {
         musics.values.forEach { it.dispose() }
         sounds.values.forEach { it.dispose() }

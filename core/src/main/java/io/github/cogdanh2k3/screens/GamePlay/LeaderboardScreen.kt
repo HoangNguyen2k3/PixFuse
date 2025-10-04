@@ -12,6 +12,7 @@ import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.badlogic.gdx.utils.viewport.Viewport
+import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.screens.MenuScreen
 import io.github.cogdanh2k3.utils.FontUtils
@@ -42,11 +43,14 @@ class LeaderboardScreen(private val game: Main) : Screen {
         )
 
         leaderboardImage = Texture("UI/leaderboard.png")
+        val list_high_score = SaveManager.gameSave.list_high_score
 
         for (i in 0 until 10) {
             leaderboard[i] = prefs.getInteger("score_$i", 0)
         }
-
+        for(i in 0 until list_high_score.size){
+            leaderboard[i] = list_high_score[i]
+        }
         val table = Table()
         table.setFillParent(true)
         table.top().padTop(100f)
@@ -107,7 +111,6 @@ class LeaderboardScreen(private val game: Main) : Screen {
 
         table.add(backButton).width(400f).height(90f)
     }
-
     private fun createVerticalGradient(top: Color, bottom: Color): Texture {
         val pixmap = Pixmap(1, 256, Pixmap.Format.RGBA8888)
         for (y in 0 until 256) {

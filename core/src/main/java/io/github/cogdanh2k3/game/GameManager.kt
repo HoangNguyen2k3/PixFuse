@@ -191,7 +191,7 @@ fun spawnTile() {
                     board.setTile(r, c, t.copy(frozen = newFrozen))
                     if (newFrozen == 0) {
                         // 👉 chỗ này: tile vừa tan băng
-                        Gdx.input.vibrate(200)
+                        SoundManager.playVibration(200)
                         board.addExplosionIceThaw(r, c) // hoặc hiệu ứng crack ice
                         //SoundManager.playSfx(SoundId.UNFREEZE)
                     }
@@ -224,7 +224,8 @@ fun spawnTile() {
         }
 
         board.addExplosionBoom(r, c)
-        Gdx.input.vibrate(300)
+        //Gdx.input.vibrate(300)
+        SoundManager.playVibration(300)
 //        SoundManager.playSfx(SoundId.EXPLODE)
     }
     private fun processLine(
@@ -323,7 +324,8 @@ fun spawnTile() {
                 board.addMoveAnim(action.value, index, fromC, index, toC)
 
                 if (action.merged) {
-                    Gdx.input.vibrate(100)
+                    //Gdx.input.vibrate(100)
+                    SoundManager.playVibration(100)
                     board.addExplosion(index, toC)
                     board.addMergeAnim(index, toC, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
@@ -334,7 +336,8 @@ fun spawnTile() {
                 board.addMoveAnim(action.value, fromR, index, toR, index)
 
                 if (action.merged) {
-                    Gdx.input.vibrate(100)
+                    //Gdx.input.vibrate(100)
+                    SoundManager.playVibration(100)
                     board.addExplosion(toR, index)
                     board.addMergeAnim(toR, index, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)

@@ -2,47 +2,120 @@ package io.github.cogdanh2k3.ui
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.*
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.video.VideoPlayer
 import com.badlogic.gdx.video.VideoPlayerCreator
 
 class HelpPopup(private val stage: Stage) {
-    val skin = Skin().apply {
-        val font = BitmapFont()
-        add("default-font", font)
 
-        // WindowStyle cần có cho Dialog
-        add("default", Window.WindowStyle(font, Color.WHITE, TextureRegionDrawable(Texture("UI/button.png"))))
+    // --- Skin tự thiết kế với font lớn ---
+    private val skin = Skin().apply {
+        // Font mặc định
+        val fontDefault = BitmapFont()
+        add("default-font", fontDefault)
 
-        // TextButton style
+        // Font lớn cho title
+        val titleFont = BitmapFont().apply {
+            data.setScale(2f) // scale lên 2 lần
+        }
+        add("title-font", titleFont)
+
+        // Window style
+        val windowPixmap = Pixmap(1,1, Pixmap.Format.RGBA8888).apply {
+            setColor(Color(0.12f, 0.12f, 0.12f, 0.95f))
+            fill()
+        }
+        add("default", Window.WindowStyle(titleFont, Color.WHITE, TextureRegionDrawable(Texture(windowPixmap))))
+
+        // Button style với font lớn hơn
+        val btnUpPixmap = Pixmap(1,1, Pixmap.Format.RGBA8888).apply {
+            setColor(Color(0.2f,0.2f,0.25f,1f))
+            fill()
+        }
+        val btnDownPixmap = Pixmap(1,1, Pixmap.Format.RGBA8888).apply {
+            setColor(Color(0.35f,0.35f,0.4f,1f))
+            fill()
+        }
         add("default", TextButton.TextButtonStyle().apply {
-            this.font = font
-            this.fontColor = Color.WHITE
-            val drawable = TextureRegionDrawable(Texture("UI/button.png"))
-            up = drawable
-            down = drawable.tint(Color.GRAY)
+            font = BitmapFont().apply { data.setScale(1.5f) } // scale nút
+            fontColor = Color.WHITE
+            up = TextureRegionDrawable(Texture(btnUpPixmap))
+            down = TextureRegionDrawable(Texture(btnDownPixmap))
+        })
+
+        // Label mô tả nhỏ
+        add("desc-label", Label.LabelStyle(fontDefault, Color.LIGHT_GRAY))
+
+        // ScrollPane style
+        val scrollBg = Pixmap(1,1, Pixmap.Format.RGBA8888).apply {
+            setColor(Color(0.15f,0.15f,0.15f,0.95f))
+            fill()
+        }
+        val scrollKnob = Pixmap(1,1, Pixmap.Format.RGBA8888).apply {
+            setColor(Color(0.4f,0.4f,0.4f,0.8f))
+            fill()
+        }
+        add("default", ScrollPane.ScrollPaneStyle().apply {
+            background = TextureRegionDrawable(Texture(scrollBg))
+            vScrollKnob = TextureRegionDrawable(Texture(scrollKnob))
         })
     }
+
     private var dialog: Dialog? = null
     private var videoPlayer: VideoPlayer? = null
+    private var videoImage: Image? = null
+
+    private val features = listOf(
+        Triple("Trap Bomb", "Gây nổ và phá hủy các ô xung quanh.", "video/videote.mp4"),
+        Triple("Wall", "Tường cản đường, có thể xóa bằng booster.", "video/videote.mp4"),
+        Triple("Booster x2", "Gấp đôi điểm khi ghép thành công.", "video/videote.mp4"),
+        Triple("Booster Extra", "Một tính năng khác để thử nghiệm.", "video/videote.mp4")
+    )
 
     fun showMainMenu() {
         dialog?.remove()
-        dialog = Dialog("HƯỚNG DẪN", skin)
-        dialog?.contentTable?.apply {
-            pad(20f)
-            defaults().width(250f).height(60f).pad(10f)
+        dialog = Dialog("", skin)
+        dialog?.titleLabel?.setText("INTRO")
+        dialog?.titleLabel?.setAlignment(Align.center)
 
-            add(makeButton("💣 Trap Bomb") { showVideo("video/videote.mp4") }).row()
-            add(makeButton("🧱 Wall") { showVideo("video/videote.mp4") }).row()
-            add(makeButton("⚡ Booster x2") { showVideo("video/videote.mp4") }).row()
-            add(makeButton("✖ Đóng") { dialog?.hide() }).row()
+        val mainTable = Table()
+        mainTable.defaults().width(280f).pad(8f)
+
+        for ((name, desc, video) in features) {
+            val featureTable = Table()
+            featureTable.defaults().width(280f)
+
+            featureTable.add(makeButton(name) { showVideo(video) }).height(60f).row() // nút lớn hơn
+            featureTable.add(Label(desc, skin, "desc-label")).height(30f).row() // mô tả lớn hơn 1 chút
+
+            mainTable.add(featureTable).row()
+
+            val sepPixmap = Pixmap(1,1, Pixmap.Format.RGBA8888).apply {
+                setColor(Color(0.7f,0.7f,0.7f,0.4f))
+                fill()
+            }
+            val sep = Image(Texture(sepPixmap))
+            mainTable.add(sep).width(280f).height(2f).padTop(5f).padBottom(5f).row() // dày hơn 1 chút
         }
+
+        val scrollPane = ScrollPane(mainTable, skin).apply {
+            setScrollingDisabled(false, false)
+            setFadeScrollBars(false)
+            setForceScroll(false,true)
+            setSmoothScrolling(true)
+        }
+
+        dialog?.contentTable?.clear()
+        dialog?.contentTable?.add(scrollPane)!!.width(300f).height(450f).row() // cao hơn
+        dialog?.contentTable?.add(makeButton("EXIT") { dialog?.hide() })!!.height(60f).padTop(10f).row() // nút lớn
 
         dialog?.show(stage)
     }
@@ -50,27 +123,30 @@ class HelpPopup(private val stage: Stage) {
     private fun makeButton(text: String, action: () -> Unit): TextButton {
         return TextButton(text, skin).apply {
             label.setAlignment(Align.center)
-            addListener { action(); true }
+            addListener(object : ClickListener() {
+                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                    action()
+                }
+            })
         }
     }
 
-    private fun showVideo(videoPath: String) {
+    fun showVideo(videoPath: String) {
         dialog?.remove()
+        dialog = Dialog("DETAIL INTRO", skin)
+        dialog?.titleLabel?.setAlignment(Align.center)
 
-        dialog = Dialog("XEM HƯỚNG DẪN", skin)
         dialog?.contentTable?.apply {
             pad(15f)
 
-            // Hình đại diện (ảnh thumbnail) nếu videoPlayer chưa sẵn sàng
-            val preview = Image(Texture("UI/button.png"))
-            add(preview).width(400f).height(300f).row()
+            videoImage = Image().apply { setSize(400f,300f) }
+            add(videoImage).width(400f).height(300f).row()
 
-            val backBtn = TextButton("⬅ Quay lại", skin)
+            val backBtn = TextButton("BACK", skin)
             add(backBtn).padTop(10f).row()
             backBtn.addListener { showMainMenu(); true }
         }
 
-        // Dùng VideoPlayer để phát video
         videoPlayer = VideoPlayerCreator.createVideoPlayer()
         videoPlayer?.play(Gdx.files.internal(videoPath))
 
@@ -79,6 +155,9 @@ class HelpPopup(private val stage: Stage) {
 
     fun update() {
         videoPlayer?.update()
+        videoPlayer?.texture?.let { tex ->
+            videoImage?.drawable = TextureRegionDrawable(tex)
+        }
     }
 
     fun dispose() {

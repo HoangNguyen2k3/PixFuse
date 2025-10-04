@@ -69,6 +69,8 @@ class WinScreen(
     private val fireworks = mutableListOf<Firework>()
 
     override fun show() {
+        SaveManager.gameSave.addScore(score)
+        SaveManager.saveGame()
         fireworkAnim = SpriteSheetAnimation("titles/firework.png", 5, 6, 0.05f)
         winTexture = Texture("UI/youwin.png")
         rocketTexture = Texture("effects/fireworkDot.png")
@@ -230,7 +232,6 @@ class WinScreen(
     }
 
     private fun goNextLevel() {
-        val gameSave: GameSave = SaveManager.loadGameSave()
         if (levelData != null) {
             val world = LevelManager.worlds.find { it.id == levelData.currentWorld }
             if (world != null) {

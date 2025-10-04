@@ -10,6 +10,7 @@ import io.github.cogdanh2k3.Animation
 import io.github.cogdanh2k3.utils.SpriteSheetAnimation
 import kotlin.math.sin
 import com.badlogic.gdx.graphics.g2d.BitmapFont
+import io.github.cogdanh2k3.DataGame.IntPair
 import io.github.cogdanh2k3.utils.FontUtils
 
 class Board(val size: Int) {
@@ -93,8 +94,8 @@ class Board(val size: Int) {
     private val animations = mutableListOf<Animation>()
     private val spawnAnimations = mutableListOf<SpawnAnim>()
     public var LEVEL_WALLS = listOf(
-        Pair(1, 1),
-        Pair(2, 2)
+        IntPair(1, 1),
+        IntPair(2, 2)
     )
 
     data class SpawnAnim(val value: Int, val row: Int, val col: Int, var time: Float = 0f)
@@ -108,9 +109,9 @@ class Board(val size: Int) {
     //InitGrid()
 
     }
-    fun InitGrid(){
-        for ((x, y) in LEVEL_WALLS) {
-            grid[x][y].value = TILE_WALL
+    fun InitGrid() {
+        for (pair in LEVEL_WALLS) {
+            grid[pair.first][pair.second].value = TILE_WALL
         }
     }
     //-------------------BOOSTER-----------------------

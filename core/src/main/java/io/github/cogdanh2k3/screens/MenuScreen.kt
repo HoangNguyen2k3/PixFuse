@@ -33,9 +33,15 @@ class MenuScreen(val game: Main) : Screen {
     private val logo = Texture("titles/new_name.png")
     private val bg_button  = Texture("UI/Button_main.png")
     init {
+       // SaveManager.loadGameSave()
         SoundManager.loadAll()
-        SoundManager.playMusic(SoundId.MUSIC)
-        SaveManager.loadGameSave()
+        if(SaveManager.gameSave.bool_music){
+            SoundManager.playMusic(SoundId.MUSIC)
+        }else{
+            SoundManager.stopMusic(SoundId.MUSIC)
+        }
+
+
         val button_font= FontUtils.loadCustomFont(50, Color.WHITE)
         skin.add("default-font", button_font)
 // Dùng Button_main.png làm nền cho nút

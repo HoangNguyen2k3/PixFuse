@@ -11,31 +11,69 @@ object SaveManager {
         setOutputType(JsonWriter.OutputType.json)
     }
 
-    fun loadGameSave(): GameSave {
-        val file: FileHandle = Gdx.files.local(SAVE_FILE)
+    lateinit var gameSave: GameSave
+        public set
 
-        return if (file.exists()) {
-            // Đọc file lưu
-            json.fromJson(GameSave::class.java, file)
+    init {
+        gameSave = loadGameSave()
+    }
+
+    fun loadGameSave(): GameSave {
+        val file = Gdx.files.local(SAVE_FILE)
+        Gdx.app.log("SaveManager", "📂 Bắt đầu load file save...")
+        Gdx.app.log("SaveManager", "📁 Đường dẫn file: ${file.file().absolutePath}")
+        Gdx.app.log("SaveManager", "📦 File type: ${file.type()}")
+
+        if (file.exists()) {
+            try {
+                val raw = file.readString()
+                Gdx.app.log("SaveManager", "📄 Nội dung JSON:\n$raw")
+
+                val loaded = json.fromJson(GameSave::class.java, raw)
+
+                // ✅ Sao chép và đảm bảo danh sách mutable
+                gameSave = loaded.copy(
+                    list_high_score = loaded.list_high_score?.toMutableList() ?: mutableListOf(),
+                    worlds = loaded.worlds?.toMutableList() ?: mutableListOf()
+                )
+
+                // ✅ Chuyển các world.levels thành mutable list (tránh lỗi sau)
+
+                Gdx.app.log("SaveManager", "✅ Load thành công: HighScore = ${gameSave.list_high_score}")
+                return gameSave
+
+            } catch (e: Exception) {
+                Gdx.app.error("SaveManager", "❌ Parse lỗi, tạo file mới", e)
+            }
         } else {
-            // Tạo save mặc định
-            val newSave = createDefaultGameSave()
-            saveGame(newSave)
-            newSave
+            Gdx.app.log("SaveManager", "⚠️ File không tồn tại, tạo mới.")
+        }
+
+        // 🔥 Nếu lỗi hoặc file không có — tạo save mặc định
+        val newSave = createDefaultGameSave()
+        gameSave = newSave
+        saveGame()
+        Gdx.app.log("SaveManager", "🆕 Tạo file save mặc định thành công.")
+        return newSave
+    }
+
+    fun saveGame() {
+        try {
+            val file = Gdx.files.local(SAVE_FILE)
+            val jsonText = json.prettyPrint(gameSave)
+            file.writeString(jsonText, false)
+            Gdx.app.log("SaveManager", "💾 Đã lưu game thành công. (${file.file().absolutePath})")
+        } catch (e: Exception) {
+            Gdx.app.error("SaveManager", "❌ Lỗi khi lưu game", e)
         }
     }
 
-    fun saveGame(gameSave: GameSave) {
-        val file: FileHandle = Gdx.files.local(SAVE_FILE)
-        file.writeString(json.prettyPrint(gameSave), false)
-    }
-
-    // Khởi tạo save mặc định
     private fun createDefaultGameSave(): GameSave {
+        Gdx.app.log("SaveManager", "📦 Đang tạo GameSave mặc định...")
+
         val worlds = mutableListOf<WorldData>()
         var idCounter = 1
 
-        // Ví dụ tạo 3 world, mỗi world 10 màn
         for (worldId in 1..5) {
             val levels = mutableListOf<LevelData>()
             for (index in 1..15) {
@@ -43,25 +81,31 @@ object SaveManager {
                     LevelData(
                         id = idCounter++,
                         indexInWorld = index,
-                        //unlocked = (worldId == 1 && index == 1), // chỉ mở màn 1
-                        unlocked = true, // chỉ mở màn 1
+                        unlocked = (worldId == 1 && index == 1),
                         stars = 0,
-                        target = emptyList(),
+                        target = mutableListOf(),
                         currentWorld = worldId,
-                        wallData = emptyList()
+                        wallData = mutableListOf()
                     )
                 )
             }
             worlds.add(WorldData(id = worldId, levels = levels))
         }
 
-        return GameSave(
+        val defaultSave = GameSave(
             currentLevel = 1,
             currentUnlockLevel = 1,
             currentUnlockWorld = 1,
             highestScore = 0,
             theme = "Pokemon",
-            worlds = worlds
+            worlds = worlds,
+            list_high_score = mutableListOf(),
+            bool_music = true,
+            bool_sound = true,
+            bool_vibration = true
         )
+
+        Gdx.app.log("SaveManager", "✅ GameSave mặc định đã được tạo.")
+        return defaultSave
     }
 }

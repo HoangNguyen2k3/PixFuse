@@ -17,6 +17,9 @@ import io.github.cogdanh2k3.utils.FontUtils
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.g2d.NinePatch
+import io.github.cogdanh2k3.DataGame.SaveManager
+import io.github.cogdanh2k3.audio.SoundId
+import io.github.cogdanh2k3.audio.SoundManager
 
 class SettingScreen(val game: Main) : ScreenAdapter() {
 
@@ -55,7 +58,9 @@ class SettingScreen(val game: Main) : ScreenAdapter() {
         Gdx.input.inputProcessor = stage
 
         val skin = Skin()
-
+        soundOn = SaveManager.gameSave.bool_sound
+        musicOn = SaveManager.gameSave.bool_music
+        vibrateOn = SaveManager.gameSave.bool_vibration
         // === Nền nút ===
         fun makeButtonBackground(color: Color): NinePatchDrawable {
             val pm = Pixmap(1, 1, Pixmap.Format.RGBA8888)
@@ -100,22 +105,37 @@ class SettingScreen(val game: Main) : ScreenAdapter() {
         musicButton = TextButton("Music: ON", musicStyle)
         vibrateButton = TextButton("Vibration: ON", vibrateStyle)
         backButton = TextButton("Back", backStyle)
+        soundButton.setText("Sound: ${if (soundOn) "ON" else "OFF"}")
+        musicButton.setText("Music: ${if (musicOn) "ON" else "OFF"}")
+        vibrateButton.setText("Vibration: ${if (vibrateOn) "ON" else "OFF"}")
+
         soundButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 soundOn = !soundOn
                 soundButton.setText("Sound: ${if (soundOn) "ON" else "OFF"}")
+                SaveManager.gameSave.bool_sound = soundOn
+                SaveManager.saveGame()
             }
         })
         musicButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 musicOn = !musicOn
                 musicButton.setText("Music: ${if (musicOn) "ON" else "OFF"}")
+                SaveManager.gameSave.bool_music = musicOn
+                SaveManager.saveGame()
+                if(SaveManager.gameSave.bool_music){
+                    SoundManager.playMusic(SoundId.MUSIC)
+                }else{
+                    SoundManager.stopMusic(SoundId.MUSIC)
+                }
             }
         })
         vibrateButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 vibrateOn = !vibrateOn
                 vibrateButton.setText("Vibration: ${if (vibrateOn) "ON" else "OFF"}")
+                SaveManager.gameSave.bool_vibration = vibrateOn
+                SaveManager.saveGame()
             }
         })
         backButton.addListener(object : ClickListener() {

@@ -13,6 +13,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.StretchViewport
+import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.Mode.GameMode
 import io.github.cogdanh2k3.screens.MenuScreen
