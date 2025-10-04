@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.Timer
 import io.github.cogdanh2k3.DataGame.LevelData
 import io.github.cogdanh2k3.Mode.GameMode
+import io.github.cogdanh2k3.Mode.TimedMode
 import io.github.cogdanh2k3.audio.SoundId
 import io.github.cogdanh2k3.audio.SoundManager
 import kotlin.random.Random
@@ -72,19 +73,25 @@ fun spawnTile() {
     when {
         p < 0.10f -> {
             // BOOM (10%)
-            val tile = Tile(value = value, frozen = 0, isBoom = true, boomCounter = 2)
+            val tile = Tile(value = value, frozen = 0, isBoom = true, boomCounter = 2,isThunder = false, thunderCounter = 0)
             board.setTile(r, c, tile)
             board.addSpawnAnim(r, c, value)
         }
         p < 0.20f -> {
             // FROZEN (20%)
-            val tile = Tile(value = value, frozen = 2, isBoom = false, boomCounter = 0)
+            val tile = Tile(value = value, frozen = 2, isBoom = false, boomCounter = 0, isThunder = false, thunderCounter = 0)
+            board.setTile(r, c, tile)
+            board.addSpawnAnim(r, c, value)
+        }
+        p < 0.40f -> {
+            // FROZEN (20%)
+            val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0,isThunder = true, thunderCounter = 2)
             board.setTile(r, c, tile)
             board.addSpawnAnim(r, c, value)
         }
         else -> {
             // NORMAL
-            val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0)
+            val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0,isThunder = false, thunderCounter = 0)
             board.setTile(r, c, tile)
             board.addSpawnAnim(r, c, value)
         }
@@ -93,6 +100,10 @@ fun spawnTile() {
 
     fun update() {
         if(hasWon||hasLost) return
+        if(mode.name=="Timed"){
+            println("Remaining Time:") // log
+            checkLose()
+        }
         if (isMoved) {
             spawnTile()
             checkWin()
@@ -113,10 +124,15 @@ fun spawnTile() {
     }
     private fun checkLose() {
         if (hasLost || hasWon) return
-        if (board.getEmptyCells().isNotEmpty()) return
-
-        // không còn ô trống → check merge được nữa không
-        for (r in 0 until board.size) {
+/*        if (board.getEmptyCells().isNotEmpty()) return
+        println("Remaining Time: 2") // log*/
+        // không còn ô trống → check merge được nữa khôngif
+        if (mode.checkLose(board,score)){
+            SoundManager.playSfx(SoundId.LOSE)
+            hasLost = true
+            return
+        }
+/*        for (r in 0 until board.size) {
             for (c in 0 until board.size) {
                 val v = board.getTile(r, c)
                 if (r + 1 < board.size && v == board.getTile(r + 1, c)) return
@@ -124,7 +140,7 @@ fun spawnTile() {
             }
         }
         SoundManager.playSfx(SoundId.LOSE)
-        hasLost = true
+        hasLost = true*/
     }
 
     fun moveLeft() = moveRows(reversed = false)
@@ -207,8 +223,44 @@ fun spawnTile() {
                         explode(r, c)
                     }
                 }
+                if (t.isThunder) {
+                    t.thunderCounter--
+                    if (t.thunderCounter <= 0) {
+                        triggerThunderBuff(r, c)
+                    }
+                }
             }
         }
+    }
+    private fun triggerThunderBuff(r: Int, c: Int) {
+        val thunderTile = board.getTile(r, c)
+
+        // Thêm hiệu ứng thunder nổ (animation riêng)
+        board.addExplosionThunder(r, c)
+        //SoundManager.playSfx(SoundId.THUNDER)
+        SoundManager.playVibration(250)
+
+        for (i in 0 until board.size) {
+            val rowTile = board.getTile(r, i)
+            val colTile = board.getTile(i, c)
+
+            // buff hàng
+            if (rowTile.value > 0 && !rowTile.isThunder && rowTile.value != TILE_WALL) {
+                rowTile.value += 1
+                board.addExplosionThunder(r, i)
+            }
+
+            // buff cột
+            if (colTile.value > 0 && !colTile.isThunder && colTile.value != TILE_WALL) {
+                colTile.value += 1
+                board.addExplosionThunder(i, c)
+            }
+        }
+
+        // Thunder tự hủy sau khi nổ
+        thunderTile.value = 0
+        thunderTile.isThunder = false
+        thunderTile.thunderCounter = 0
     }
     private fun explode(r: Int, c: Int) {
         for (dr in -1..1) {
@@ -217,8 +269,12 @@ fun spawnTile() {
                 val nc = c + dc
 
                 if (nr in 0 until board.size && nc in 0 until board.size) {
-                    board.setTile(nr, nc, Tile(0)) // xóa ô
-                    board.addExplosionBoom(nr, nc)
+                    val t = board.getTile(nr, nc)
+                    // CHỈ xóa/hiệu ứng nếu ô không phải wall
+                    if (t.value != TILE_WALL) {
+                        board.setTile(nr, nc, Tile(0)) // xóa ô
+                        board.addExplosionBoom(nr, nc) // hiệu ứng nổ
+                    }
                 }
             }
         }
@@ -329,6 +385,7 @@ fun spawnTile() {
                     board.addExplosion(index, toC)
                     board.addMergeAnim(index, toC, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
+                    mode.specialEffect()
                 }
             } else {
                 val fromR = if (reversed) board.size - 1 - action.from else action.from
@@ -341,6 +398,7 @@ fun spawnTile() {
                     board.addExplosion(toR, index)
                     board.addMergeAnim(toR, index, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
+                    mode.specialEffect()
                 }
             }
         }

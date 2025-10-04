@@ -8,6 +8,8 @@ interface GameMode {
     fun checkWin(board: Board, score: Int): Boolean
     fun checkLose(board: Board, score: Int): Boolean
     fun getTargetDescription(): String
+    fun init()
+    fun specialEffect()
 }
 // Chế độ Endless
 class EndlessMode : GameMode {
@@ -18,6 +20,10 @@ class EndlessMode : GameMode {
         return false
     }
 
+    override fun specialEffect() {
+    }
+    override fun init() {
+    }
     override fun checkLose(board: Board, score: Int): Boolean {
         // Lose khi không còn ô trống và không merge được
         if (board.getEmptyCells().isNotEmpty()) return false
@@ -40,27 +46,43 @@ class TargetMode(
     private val targetValues: List<Int>,         // nhiều giá trị mục tiêu
     private val targetNames: List<String> = emptyList() // tên tương ứng (nếu có)
 ) : GameMode {
+    override fun init() {
+    }
+    override fun specialEffect() {
+    }
     override val name: String = "Target"
     override val data: DataGame = DataGame()
 
     override fun checkWin(board: Board, score: Int): Boolean {
-        // Đếm số lần xuất hiện của mỗi giá trị trên board
-        val boardCounts = mutableMapOf<Int, Int>()
+        // Lấy tất cả giá trị trên board
+        val boardValues = mutableListOf<Int>()
         for (r in 0 until board.size) {
             for (c in 0 until board.size) {
                 val v = board.getTile(r, c).value
-                if (v > 0) boardCounts[v] = (boardCounts[v] ?: 0) + 1
+                if (v > 0) boardValues.add(v)
             }
         }
 
-        // Đếm số lần yêu cầu trong targetValues
-        val targetCounts = targetValues.groupingBy { it }.eachCount()
+        // Sắp xếp giảm dần để ưu tiên match số lớn
+        boardValues.sortDescending()
 
-        // So sánh: board phải có đủ số lượng cho từng giá trị target
-        return targetCounts.all { (value, needed) ->
-            (boardCounts[value] ?: 0) >= needed
+        // Copy target để check
+        val neededTargets = targetValues.sortedDescending().toMutableList()
+
+        // Duyệt từng target
+        for (target in neededTargets) {
+            // Tìm 1 ô trên board >= target
+            val idx = boardValues.indexOfFirst { it >= target }
+            if (idx == -1) {
+                return false // không tìm được → thua
+            } else {
+                boardValues.removeAt(idx) // dùng ô này rồi thì bỏ đi
+            }
         }
+
+        return true // tất cả target đều match
     }
+
 
 
     override fun checkLose(board: Board, score: Int): Boolean {
@@ -99,18 +121,32 @@ class TargetMode(
     }
 }
 class TimedMode(
-    private val durationSeconds: Float = 180f // 3 phút
+     val durationSeconds: Float = 33f // 3 phút
 ) : GameMode {
+    override fun init() {
+        remainingTime = durationSeconds
+    }
+    override fun specialEffect() {
+        remainingTime += durationSeconds/60
+    }
     override val name: String = "Timed"
     override val data: DataGame = DataGame()
 
     var remainingTime: Float = durationSeconds
-        private set
+        public set
 
     fun update(delta: Float) {
         if (remainingTime > 0f) {
             remainingTime -= delta
             if (remainingTime < 0f) remainingTime = 0f
+
+        }
+
+        // kiểm tra nếu hết giờ
+        if (remainingTime <= 0f) {
+            println("Time's up!")
+            // gọi game over hoặc lose
+            // gameOver()
         }
     }
 
@@ -120,7 +156,9 @@ class TimedMode(
     }
 
     override fun checkLose(board: Board, score: Int): Boolean {
-        return remainingTime <= 0f
+        println("Remaining Time: $remainingTime") // log
+        val checklose = remainingTime <= 0f
+        return checklose
     }
 
     override fun getTargetDescription(): String {

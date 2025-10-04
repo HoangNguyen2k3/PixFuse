@@ -7,7 +7,9 @@ data class Tile(
     var value: Int = 0,       // 0 = trống, -1 = tường, >0 = giá trị tile
     var frozen: Int = 0,       // >0 = số lần cần vuốt để phá băng
     var isBoom: Boolean = false, // true = có bom, false = không có bom
-    var boomCounter: Int = 0
+    var boomCounter: Int = 0,
+    var isThunder: Boolean = false, // ⚡ Thunder tile đặc biệt
+    var thunderCounter: Int = 0     // đếm ngược như boom, khi = 0 thì nổ buff
 )
 /*
 class Tile(

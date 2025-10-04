@@ -31,6 +31,7 @@ class Board(val size: Int) {
     val txt_font= FontUtils.loadCustomFont(30, Color.BLACK)
     private val iceTileTextures = Texture("titles/ice_tile.png")
     private val bombTileTextures = Texture("titles/bomb.png")
+    private val thunderTileTexture = Texture("titles/thunder_icon.png")
     // ---- Explosion animation ----
     private val explosionSheet = SpriteSheetAnimation(
         "effects/explosion.png",
@@ -44,6 +45,20 @@ class Board(val size: Int) {
     fun addExplosion(row: Int, col: Int) {
         val (dx, dy) = gridToPos(row, col)
         explosions.add(Explosion(dx, dy))
+    }
+    //------------------------ Thunder ---------------------------
+    private val explosionThunderSheet = SpriteSheetAnimation(
+        "effects/thunder.png",
+        rows = 1, cols = 5,
+        frameDuration = 0.1f,
+        playMode = com.badlogic.gdx.graphics.g2d.Animation.PlayMode.NORMAL
+    )
+    data class ExplosionThunder(val x: Float, val y: Float, var time: Float = 0f)
+    private val explosionsThunder = mutableListOf<ExplosionThunder>()
+
+    fun addExplosionThunder(row: Int, col: Int) {
+        val (dx, dy) = gridToPos(row, col)
+        explosionsThunder.add(ExplosionThunder(dx, dy))
     }
     //----------Explosion Boom-----------------
     private val explosionBoomSheet = SpriteSheetAnimation(
@@ -317,6 +332,22 @@ fun setTile(r: Int, c: Int, tile: Tile) {
                     txt_font.draw(batch, layout2, textX2, textY2)
                     continue
                 }
+                if (v.isThunder) {
+                    // Vẽ tile Thunder (icon riêng)
+                    batch.color = Color(1f, 1f, 1f, 1f)
+                    batch.draw(thunderTileTexture, dx, dy, tileSize / 2, tileSize / 2)
+                    batch.color = Color.WHITE
+
+                    // Vẽ số lượt còn lại (đếm ngược thunderCounter)
+                    val thunderText = v.thunderCounter.toString()
+                    val layout3 = GlyphLayout(txt_font, thunderText)
+                    val textX3 = dx + (tileSize - layout3.width) / 2f
+                    val textY3 = dy + (tileSize + layout3.height) / 2f
+                    txt_font.color = Color.BLACK
+                    txt_font.draw(batch, layout3, textX3, textY3)
+
+                    continue // bỏ qua vẽ các lớp khác
+                }
 
             }
         }
@@ -385,6 +416,19 @@ fun setTile(r: Int, c: Int, tile: Tile) {
             batch.draw(frame, e.x - offset, e.y - offset, size, size)
             if (explosionBoomSheet.isAnimationFinished(e.time)) {
                 iceThaw.remove()
+            }
+        }
+        val thunder = explosionsThunder.iterator()
+        while (thunder.hasNext()) {
+            val e = thunder.next()
+            e.time += dt
+            val frame = explosionThunderSheet.getFrameAt(e.time, looping = false)
+            val size = tileSize * 1.2f
+            val offset = (size - tileSize) / 2
+
+            batch.draw(frame, e.x - offset, e.y - offset, size, size)
+            if (explosionThunderSheet.isAnimationFinished(e.time)) {
+                thunder.remove()
             }
         }
     }

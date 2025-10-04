@@ -114,6 +114,7 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         setupBoard()
     }
     override fun show() {
+        mode.init()
         // Chuyển input sang stage để bấm booster được
         Gdx.input.inputProcessor = stage
 
@@ -299,6 +300,9 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
     }
 
     private fun updateGame(delta: Float) {
+        if(manager.mode.name == "Timed"){
+            manager.update()
+        }
         if (manager.isMoved) {
             manager.update()
             val newScore = manager.score
