@@ -33,6 +33,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import io.github.cogdanh2k3.ui.BoosterMessage
+import io.github.cogdanh2k3.ui.HelpPopup
 
 class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? = null) : ScreenAdapter() {
     public var BOARD_SIZE = if(levelData==null){4}else{levelData.sizeBoard}
@@ -95,6 +96,9 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
     private lateinit var booster1Btn: ImageButton
     private lateinit var booster2Btn: ImageButton
     private lateinit var booster3Btn: ImageButton
+
+    private lateinit var helpButton: ImageButton
+    private lateinit var helpPopup: HelpPopup
     init {
         manager.InitData()
         manager.spawnTile()
@@ -175,6 +179,23 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
                 }
             }
         })
+        // ========== HELP BUTTON ==========
+        val helpTex = Texture("UI/helpicon.png")
+        val helpDrawable = TextureRegionDrawable(helpTex)
+        helpButton = ImageButton(helpDrawable)
+        helpButton.setSize(getResponsiveValue(60f), getResponsiveValue(60f))
+        helpButton.setPosition(getResponsiveValue(20f), viewport.worldHeight - getResponsiveValue(80f))
+
+        stage.addActor(helpButton)
+
+// Popup
+        helpPopup = HelpPopup(stage)
+
+        helpButton.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                helpPopup.showMainMenu()
+            }
+        })
     }
 
 
@@ -244,18 +265,34 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
             val touchPoint = Vector3(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
             viewport.unproject(touchPoint)
 
-            // Check if pause button was clicked
-            val pauseButtonX = viewport.worldWidth - getResponsiveValue(40f) - getResponsiveValue(80f)
-            val pauseButtonY = viewport.worldHeight - getResponsiveValue(50f) - getResponsiveValue(15f)
-            val pauseButtonWidth = getResponsiveValue(80f)
-            val pauseButtonHeight = getResponsiveValue(35f)
+            // --- Lấy đúng kích thước và vị trí như khi vẽ ---
+            val pauseButtonWidth = getResponsiveValue(70f)
+            val pauseButtonHeight = getResponsiveValue(30f)
+            val margin = getResponsiveValue(15f)
+            val pauseButtonX = viewport.worldWidth - margin - pauseButtonWidth
+            val pauseButtonY = viewport.worldHeight - margin - pauseButtonHeight
 
-            if (isPointInRect(touchPoint.x, touchPoint.y,
-                    pauseButtonX, pauseButtonY, pauseButtonWidth, pauseButtonHeight)) {
+            // Tăng nhẹ vùng bấm cho dễ nhấn
+            val padding = getResponsiveValue(10f)
+            val expandedX = pauseButtonX - padding
+            val expandedY = pauseButtonY - padding
+            val expandedW = pauseButtonWidth + padding * 2
+            val expandedH = pauseButtonHeight + padding * 2
+
+            if (isPointInRect(
+                    touchPoint.x,
+                    touchPoint.y,
+                    expandedX,
+                    expandedY,
+                    expandedW,
+                    expandedH
+                )
+            ) {
                 pauseGame()
             }
         }
     }
+
 
     private fun getResponsiveValue(baseValue: Float): Float {
         return baseValue * (viewport.worldWidth / 480f)
@@ -313,6 +350,7 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         batch.end()
         // Booster UI
         stage.act(delta)
+        helpPopup.update()
         stage.draw()
     }
     // ======= HEADER (SCORE & BEST) =======
@@ -557,5 +595,6 @@ private fun drawInstructions() {
         buttonFont.dispose()
         instructionFont.dispose()
         board.dispose()
+        helpPopup.dispose()
     }
 }

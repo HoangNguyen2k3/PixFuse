@@ -22,6 +22,7 @@ import io.github.cogdanh2k3.Mode.EndlessMode
 import io.github.cogdanh2k3.audio.SoundId
 import io.github.cogdanh2k3.audio.SoundManager
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
+import io.github.cogdanh2k3.screens.GamePlay.LeaderboardScreen
 import io.github.cogdanh2k3.utils.FontUtils
 
 class MenuScreen(val game: Main) : Screen {
@@ -65,7 +66,7 @@ class MenuScreen(val game: Main) : Screen {
         val playButton = TextButton("PLAY GAME", skin)
         val settingsButton = TextButton("SETTINGS", skin)
         val exitButton = TextButton("EXIT", skin)
-
+        val leaderboardButton = TextButton("LEADERBOARD", skin)
         playButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 Timer.schedule(object : Timer.Task() {
@@ -79,10 +80,14 @@ class MenuScreen(val game: Main) : Screen {
 
         settingsButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
-                // TODO: Settings screen
+                game.screen = SettingScreen(game)
             }
         })
-
+        leaderboardButton.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.screen = LeaderboardScreen(game)
+            }
+        })
         exitButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 Timer.schedule(object : Timer.Task() {
@@ -97,6 +102,7 @@ class MenuScreen(val game: Main) : Screen {
         table.add().height(200f).row()
         table.add(playButton).pad(20f).width(400f).height(100f).row() // Tăng kích thước
         table.add(settingsButton).pad(20f).width(400f).height(100f).row()
+        table.add(leaderboardButton).pad(20f).width(400f).height(100f).row()
         table.add(exitButton).pad(20f).width(400f).height(100f).row()
     }
 

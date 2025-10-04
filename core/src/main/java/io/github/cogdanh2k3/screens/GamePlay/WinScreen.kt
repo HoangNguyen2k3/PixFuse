@@ -13,7 +13,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
-import com.badlogic.gdx.utils.viewport.StretchViewport
+import com.badlogic.gdx.utils.viewport.StretchViewport  // Thêm import này (nếu chưa có)
 import io.github.cogdanh2k3.DataGame.GameSave
 import io.github.cogdanh2k3.DataGame.LevelData
 import io.github.cogdanh2k3.DataGame.SaveManager
@@ -23,83 +23,99 @@ import io.github.cogdanh2k3.Mode.TargetMode
 import io.github.cogdanh2k3.game.LevelManager
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 import io.github.cogdanh2k3.utils.SpriteSheetAnimation
-import kotlin.math.max
 
 class WinScreen(
     private val game: Main,
     private val score: Int,
     private val mode: GameMode,
-    private val levelData: LevelData ?= null
+    private val levelData: LevelData? = null
 ) : ScreenAdapter() {
 
     private val camera = OrthographicCamera()
-    private val viewport = StretchViewport(480f, 800f, camera)
+    private val viewport = StretchViewport(480f, 800f, camera)  // <- FIX CHÍNH: Đổi sang StretchViewport
 
     private val batch = SpriteBatch()
     private val shapeRenderer = ShapeRenderer()
 
-    // Fonts
     private val infoFont = BitmapFont().apply {
-        data.setScale(1.5f)
-        color = Color.CYAN
+        data.setScale(2.0f)
+        color = Color.WHITE
     }
     private val buttonFont = BitmapFont().apply {
-        data.setScale(1.3f)
+        data.setScale(1.5f)
         color = Color.BLACK
     }
 
-    // Buttons
-    private val playAgainBtn = Rectangle(100f, 280f, 120f, 60f)
-    private val homeBtn = Rectangle(260f, 280f, 120f, 60f)
+    // Buttons responsive hơn (dùng % height)
+    private val buttonY = 260f  // Có thể tính động: viewport.worldHeight * 0.3f trong resize()
+    private val nextBtn = Rectangle(100f, buttonY, 120f, 60f)
+    private val homeBtn = Rectangle(260f, buttonY, 120f, 60f)
 
-    // Assets
     private lateinit var fireworkAnim: SpriteSheetAnimation
     private lateinit var winTexture: Texture
+    private lateinit var rocketTexture: Texture
+
     data class Firework(
-        val x: Float,
-        val y: Float,
-        val width: Float,
-        val height: Float,
-        var time: Float = 0f
+        var x: Float,
+        var y: Float,
+        var targetY: Float,
+        var width: Float,
+        var height: Float,
+        var time: Float = 0f,
+        var exploded: Boolean = false,
+        var color: Color = Color.WHITE
     )
+
     private val fireworks = mutableListOf<Firework>()
 
     override fun show() {
         fireworkAnim = SpriteSheetAnimation("titles/firework.png", 5, 6, 0.05f)
         winTexture = Texture("UI/youwin.png")
-        fireworks.add(Firework(80f, 600f, MathUtils.random(100f, 300f), MathUtils.random(100f, 300f)))
-        fireworks.add(Firework(300f, 400f, MathUtils.random(100f, 300f), MathUtils.random(100f, 300f)))
-        fireworks.add(Firework(200f, 550f, MathUtils.random(100f, 300f), MathUtils.random(100f, 300f)))
-        fireworks.add(Firework(50f, 100f, MathUtils.random(100f, 300f), MathUtils.random(100f, 300f)))
-        fireworks.add(Firework(300f, 50f, MathUtils.random(100f, 300f), MathUtils.random(100f, 300f)))
+        rocketTexture = Texture("effects/fireworkDot.png")
+
+        repeat(10) {
+            fireworks.add(
+                Firework(
+                    x = MathUtils.random(50f, 430f),
+                    y = 0f,
+                    targetY = MathUtils.random(300f, 700f),
+                    width = MathUtils.random(100f, 180f),
+                    height = MathUtils.random(100f, 180f),
+                    color = Color(MathUtils.random(), MathUtils.random(), MathUtils.random(), 1f)
+                )
+            )
+        }
     }
 
-    private fun drawVerticalGradient() {
+    // Background full màn hình (giữ nguyên, nhưng giờ với Stretch sẽ full hoàn hảo)
+    private fun drawVerticalGradientFull() {
         val steps = 100
-        val width = viewport.worldWidth
-        val height = viewport.worldHeight
-        val bottom = Color(1f, 0.6f, 0.2f, 1f) // dịu hơn
-        val middle = Color(1f, 0.7f, 0.2f, 1f)
-        val top = Color(1f, 0.9f, 0.4f, 1f)   // vàng nhạt
+        val screenW = viewport.worldWidth
+        val screenH = viewport.worldHeight
+
+        val bottom = Color(1f, 0.6f, 0.2f, 1f) // cam
+        val middle = Color(1f, 0.9f, 0.5f, 1f) // vàng nhạt
+        val top = Color(0.5f, 0.9f, 1f, 1f)    // xanh dương nhạt
 
         shapeRenderer.projectionMatrix = camera.combined
+
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
-        val stepH = height / steps
+        val stepH = screenH / steps
         for (i in 0 until steps) {
-            val tNormalized = i.toFloat() / (steps - 1)
-            val col = if (tNormalized < 0.5f) {
-                lerpColor(bottom, middle, tNormalized / 0.5f)
-            } else {
-                lerpColor(middle, top, (tNormalized - 0.5f) / 0.5f)
+            val t = i.toFloat() / (steps - 1)
+            val col = when {
+                t < 0.5f -> lerpColor(bottom, middle, t / 0.5f)
+                else -> lerpColor(middle, top, (t - 0.5f) / 0.5f)
             }
             shapeRenderer.color = col
-            shapeRenderer.rect(0f, i * stepH, width, stepH + 1f)
+            shapeRenderer.rect(0f, i * stepH, screenW, stepH + 1f)
         }
         shapeRenderer.end()
     }
 
+
     private fun lerpColor(a: Color, b: Color, t: Float): Color {
-        val clamped = max(0f, minOf(1f, t))
+        val clamped = t.coerceIn(0f, 1f)
         return Color(
             a.r + (b.r - a.r) * clamped,
             a.g + (b.g - a.g) * clamped,
@@ -109,126 +125,102 @@ class WinScreen(
     }
 
     override fun render(delta: Float) {
-        fireworkAnim.update(delta)
-
-        // Clear trước
-        Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
+        // FIX NHỎ: Clear bằng màu top của gradient (tránh đen lộ)
+        Gdx.gl.glClearColor(0.5f, 0.9f, 1f, 1f)  // Màu sky blue (top)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
+        // Áp dụng viewport NGAY ĐẦU để UI consistent (background vẫn full nhờ setToOrtho2D)
+        viewport.apply()
         camera.update()
         batch.projectionMatrix = camera.combined
         shapeRenderer.projectionMatrix = camera.combined
 
-        // --- 1. Vẽ shape ---
-        // Gradient nền
-        drawVerticalGradient()
+        // Background full
+        drawVerticalGradientFull()
 
-        // Button nền
+        // Buttons
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
         shapeRenderer.color = Color.GOLD
-        shapeRenderer.rect(playAgainBtn.x, playAgainBtn.y, playAgainBtn.width, playAgainBtn.height)
-
+        shapeRenderer.rect(nextBtn.x, nextBtn.y, nextBtn.width, nextBtn.height)
         shapeRenderer.color = Color.SKY
         shapeRenderer.rect(homeBtn.x, homeBtn.y, homeBtn.width, homeBtn.height)
         shapeRenderer.end()
 
-        // Button viền
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
         shapeRenderer.color = Color.BLACK
-        shapeRenderer.rect(playAgainBtn.x, playAgainBtn.y, playAgainBtn.width, playAgainBtn.height)
+        shapeRenderer.rect(nextBtn.x, nextBtn.y, nextBtn.width, nextBtn.height)
         shapeRenderer.rect(homeBtn.x, homeBtn.y, homeBtn.width, homeBtn.height)
         shapeRenderer.end()
 
-        // --- 2. Vẽ batch ---
         batch.begin()
 
-        // YOU WIN (căn giữa)
+        // "YOU WIN"
         val screenWidth = viewport.worldWidth
         val screenHeight = viewport.worldHeight
-        val scale = 0.6f
-        val textureWidth = winTexture.width * scale
-        val textureHeight = winTexture.height * scale
+        val maxWidth = screenWidth * 0.7f
+        val scaleRatio = maxWidth / winTexture.width
+        val textureWidth = winTexture.width * scaleRatio
+        val textureHeight = winTexture.height * scaleRatio
         batch.draw(
             winTexture,
             (screenWidth - textureWidth) / 2f,
-            (screenWidth+screenHeight/2.5f) / 2f,
+            screenHeight * 0.65f,
             textureWidth,
             textureHeight
         )
 
         // Score
-        infoFont.draw(batch, "Score: $score", screenWidth / 2f - 60f, screenHeight / 2f - 10f)
+        infoFont.draw(batch, "Score: $score", screenWidth / 2f - 70f, screenHeight * 0.55f)
 
-        // Button text
-        drawButtonText("Next Level", playAgainBtn)
+        // Button labels
+        drawButtonText("Next Level", nextBtn)
         drawButtonText("Home", homeBtn)
 
-        // Fireworks
-        val frame = fireworkAnim.getFrame(true)
+        // Fireworks (giữ nguyên)
         for (fw in fireworks) {
-            batch.draw(frame, fw.x, fw.y, fw.width, fw.height)
+            if (!fw.exploded) {
+                fw.y += 220 * delta
+                if (fw.y >= fw.targetY) {
+                    fw.exploded = true
+                    fw.time = 0f
+                } else {
+                    batch.setColor(Color.WHITE)
+                    batch.draw(rocketTexture, fw.x, fw.y, 24f, 48f)
+                }
+            } else {
+                fw.time += delta
+                if (!fireworkAnim.isAnimationFinished(fw.time)) {
+                    val frame = fireworkAnim.getFrame(fw.time, false)
+                    batch.setColor(Color.WHITE)
+                    batch.draw(
+                        frame,
+                        fw.x - fw.width,
+                        fw.y - fw.height,
+                        fw.width * 2,
+                        fw.height * 2
+                    )
+                } else {
+                    fw.x = MathUtils.random(50f, 430f)
+                    fw.y = 0f
+                    fw.targetY = MathUtils.random(300f, 700f)
+                    fw.exploded = false
+                }
+            }
         }
+        batch.setColor(Color.WHITE)
 
         batch.end()
 
-        // --- 3. Xử lý input ---
+        // Input (giữ nguyên)
         if (Gdx.input.justTouched()) {
             val touch = Vector3(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
             viewport.unproject(touch)
             when {
-                playAgainBtn.contains(touch.x, touch.y) -> {
-                    val gameSave: GameSave = SaveManager.loadGameSave()
-
-                    if (levelData != null) {
-                        val world = LevelManager.worlds.find { it.id == levelData.currentWorld }
-                        if (world != null) {
-                            val nextIndex = levelData.indexInWorld + 1
-
-                            // 1. Trường hợp còn level trong world hiện tại
-                            val nextLevel = world.levels.find { it.indexInWorld == nextIndex }
-                            if (nextLevel != null && nextLevel.unlocked) {
-                                game.screen = GameScreen(
-                                    game,
-                                    TargetMode(nextLevel.target),
-                                    nextLevel
-                                )
-                            } else {
-                                // 2. Nếu hết level trong world hiện tại → sang world mới
-                                val nextWorld = LevelManager.worlds.find { it.id == levelData.currentWorld + 1 }
-                                if (nextWorld != null && nextWorld.levels.isNotEmpty()) {
-                                    val firstLevel = nextWorld.levels[0]
-                                    if (firstLevel.unlocked) {
-                                        game.screen = GameScreen(
-                                            game,
-                                            TargetMode(firstLevel.target),
-                                            firstLevel
-                                        )
-                                    } else {
-                                        // World chưa unlock → quay về menu
-                                        game.screen = MenuScreen(game)
-                                    }
-                                } else {
-                                    // 3. Không còn world nào nữa
-                                    game.screen = MenuScreen(game)
-                                }
-                            }
-                        } else {
-                            // Không tìm thấy world hiện tại
-                            game.screen = MenuScreen(game)
-                        }
-                    } else {
-                        // Trường hợp không có levelData (ví dụ Endless mode)
-                        val level = LevelData()
-                        game.screen = GameScreen(game, mode, level)
-                    }
-                }
-
-
+                nextBtn.contains(touch.x, touch.y) -> goNextLevel()
                 homeBtn.contains(touch.x, touch.y) -> game.screen = MenuScreen(game)
             }
         }
     }
-
 
     private fun drawButtonText(text: String, button: Rectangle) {
         val layout = GlyphLayout(buttonFont, text)
@@ -237,8 +229,36 @@ class WinScreen(
         buttonFont.draw(batch, text, textX, textY)
     }
 
+    private fun goNextLevel() {
+        val gameSave: GameSave = SaveManager.loadGameSave()
+        if (levelData != null) {
+            val world = LevelManager.worlds.find { it.id == levelData.currentWorld }
+            if (world != null) {
+                val nextIndex = levelData.indexInWorld + 1
+                val nextLevel = world.levels.find { it.indexInWorld == nextIndex }
+                if (nextLevel != null && nextLevel.unlocked) {
+                    game.screen = GameScreen(game, TargetMode(nextLevel.target), nextLevel)
+                    return
+                }
+                val nextWorld = LevelManager.worlds.find { it.id == levelData.currentWorld + 1 }
+                if (nextWorld != null && nextWorld.levels.isNotEmpty()) {
+                    val firstLevel = nextWorld.levels[0]
+                    if (firstLevel.unlocked) {
+                        game.screen = GameScreen(game, TargetMode(firstLevel.target), firstLevel)
+                        return
+                    }
+                }
+            }
+        }
+        game.screen = MenuScreen(game)
+    }
+
     override fun resize(width: Int, height: Int) {
         viewport.update(width, height, true)
+        // Tùy chọn: Update buttonY responsive
+        // buttonY = viewport.worldHeight * 0.3f
+        // nextBtn.y = buttonY
+        // homeBtn.y = buttonY
     }
 
     override fun dispose() {
@@ -248,5 +268,6 @@ class WinScreen(
         buttonFont.dispose()
         fireworkAnim.dispose()
         winTexture.dispose()
+        rocketTexture.dispose()
     }
 }

@@ -6,53 +6,56 @@ import com.badlogic.gdx.Screen
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
+import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
-import com.badlogic.gdx.utils.viewport.FitViewport
+import com.badlogic.gdx.utils.viewport.StretchViewport
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.screens.MenuScreen
 
-class PauseScreen(val game: Main, private val gameScreen: GameScreen): Screen {
+class PauseScreen(val game: Main, private val gameScreen: GameScreen) : Screen {
 
     private val camera = OrthographicCamera()
-    private val viewport = FitViewport(800f, 600f, camera)
+    private val viewport = StretchViewport(800f, 1280f, camera)
     private val batch = SpriteBatch()
     private val shapeRenderer = ShapeRenderer()
 
-    // Fonts
-    private val titleFont = BitmapFont().apply {
-        data.setScale(3.5f)
-        color = Color(0.9f, 0.95f, 1f, 1f) // pastel xanh nhạt
-    }
+    // Textures
+    private val pauseTitle = Texture("effects/pause.png")
+    private val pikachuTexture = Texture("UI/pikachu.png")
+
+    // Font
     private val buttonFont = BitmapFont().apply {
         data.setScale(2f)
         color = Color.WHITE
     }
 
-    // Button style
-    data class Button(val text: String, var x: Float, var y: Float, var width: Float, var height: Float, val color: Color)
+    // Buttons
+    private val resumeBtn = Rectangle()
+    private val menuBtn = Rectangle()
 
-    private val buttons = listOf(
-        Button("RESUME", 0f, 0f, 240f, 70f, Color(0.3f, 0.7f, 0.6f, 0.9f)),
-        Button("MAIN MENU", 0f, 0f, 240f, 70f, Color(0.8f, 0.4f, 0.4f, 0.9f))
-    )
+    // Colors
+    private val resumeColor = Color(0.3f, 0.7f, 0.6f, 0.9f)
+    private val menuColor = Color(0.8f, 0.4f, 0.4f, 0.9f)
+    private val borderColor = Color.BLACK
 
     override fun show() {
         layoutButtons()
     }
 
     private fun layoutButtons() {
-        val centerX = viewport.worldWidth / 2
-        val centerY = viewport.worldHeight / 2
-        val spacing = 90f
+        val centerX = viewport.worldWidth / 2f
+        val centerY = viewport.worldHeight / 2f
+        val spacing = 50f
+        val btnWidth = 300f
+        val btnHeight = 80f
 
-        buttons[0].x = centerX - buttons[0].width / 2
-        buttons[0].y = centerY + spacing
-        buttons[1].x = centerX - buttons[1].width / 2
-        buttons[1].y = centerY - spacing
+        resumeBtn.set(centerX - btnWidth / 2f, centerY + spacing, btnWidth, btnHeight)
+        menuBtn.set(centerX - btnWidth / 2f, centerY - spacing, btnWidth, btnHeight)
     }
 
     override fun render(delta: Float) {
@@ -61,79 +64,127 @@ class PauseScreen(val game: Main, private val gameScreen: GameScreen): Screen {
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
+        viewport.apply()
         camera.update()
         batch.projectionMatrix = camera.combined
         shapeRenderer.projectionMatrix = camera.combined
 
-        // overlay mờ
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
-        shapeRenderer.color = Color(0f, 0f, 0f, 0.6f)
-        shapeRenderer.rect(0f, 0f, viewport.worldWidth, viewport.worldHeight)
+        val worldW = viewport.worldWidth
+        val worldH = viewport.worldHeight
 
-        // vẽ button
-        for (btn in buttons) {
-            shapeRenderer.color = btn.color
-            drawRoundedRect(btn.x, btn.y, btn.width, btn.height, 20f)
+        // ===== GRADIENT BACKGROUND =====
+        val steps = 80
+        val stepH = worldH / steps
+        val bottom = Color(1f, 0.85f, 0.6f, 1f)
+        val top = Color(0.7f, 0.95f, 0.95f, 1f)
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+        for (i in 0 until steps) {
+            val t = i.toFloat() / (steps - 1)
+            shapeRenderer.color = lerpColor(bottom, top, t)
+            shapeRenderer.rect(0f, i * stepH, worldW, stepH)
         }
         shapeRenderer.end()
 
-        // vẽ chữ
+        // ===== DRAW TITLE & PIKACHU =====
         batch.begin()
 
-        // Title căn giữa
-        val titleLayout = GlyphLayout(titleFont, "PAUSED")
-        titleFont.draw(batch, titleLayout, viewport.worldWidth/2 - titleLayout.width/2, viewport.worldHeight - 30f)
+        // --- Title “Pause” ---
+        val aspectTitle = pauseTitle.width.toFloat() / pauseTitle.height
+        val desiredTitleW = worldW * 0.7f
+        val titleW = desiredTitleW
+        val titleH = desiredTitleW / aspectTitle
+        val titleX = (worldW - titleW) / 2f
+        val titleY = worldH - titleH - 160f // 🔽 hạ xuống một chút cho cân đối
+        batch.draw(pauseTitle, titleX, titleY, titleW, titleH)
 
-        // Button text căn giữa
-        for (btn in buttons) {
-            val layout = GlyphLayout(buttonFont, btn.text)
-            val textX = btn.x + (btn.width - layout.width) / 2
-            val textY = btn.y + (btn.height + layout.height) / 2
-            buttonFont.draw(batch, layout, textX, textY)
-        }
+        // --- Pikachu bottom ---
+        val desiredH = worldH * 0.22f
+        val aspect = pikachuTexture.width.toFloat() / pikachuTexture.height.toFloat()
+        val pikaW = desiredH * aspect
+        val pikaX = (worldW - pikaW) / 2f
+        val pikaY = 0f
+        batch.draw(pikachuTexture, pikaX, pikaY, pikaW, desiredH)
 
         batch.end()
+
+        // ===== DRAW BUTTONS =====
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+        shapeRenderer.color = resumeColor
+        shapeRenderer.rect(resumeBtn.x, resumeBtn.y, resumeBtn.width, resumeBtn.height)
+        shapeRenderer.color = menuColor
+        shapeRenderer.rect(menuBtn.x, menuBtn.y, menuBtn.width, menuBtn.height)
+        shapeRenderer.end()
+
+        // Borders
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
+        shapeRenderer.color = borderColor
+        shapeRenderer.rect(resumeBtn.x, resumeBtn.y, resumeBtn.width, resumeBtn.height)
+        shapeRenderer.rect(menuBtn.x, menuBtn.y, menuBtn.width, menuBtn.height)
+        shapeRenderer.end()
+
+        // ===== DRAW TEXT =====
+        batch.begin()
+        drawButtonText("RESUME", resumeBtn)
+        drawButtonText("MAIN MENU", menuBtn)
+        batch.end()
+    }
+
+    private fun lerpColor(a: Color, b: Color, t: Float): Color {
+        val tt = t.coerceIn(0f, 1f)
+        return Color(
+            a.r + (b.r - a.r) * tt,
+            a.g + (b.g - a.g) * tt,
+            a.b + (b.b - a.b) * tt,
+            a.a + (b.a - a.a) * tt
+        )
+    }
+
+    private fun drawButtonText(text: String, btn: Rectangle) {
+        val layout = GlyphLayout(buttonFont, text)
+        val textX = btn.x + (btn.width - layout.width) / 2f
+        val textY = btn.y + (btn.height + layout.height) / 2f
+        buttonFont.draw(batch, layout, textX, textY)
     }
 
     private fun handleInput() {
         if (Gdx.input.justTouched()) {
-            val touchPoint = Vector3(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
-            viewport.unproject(touchPoint)
-
-            if (touchPoint.overlaps(buttons[0])) resumeGame()
-            if (touchPoint.overlaps(buttons[1])) goToMainMenu()
+            val touch = Vector3(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
+            viewport.unproject(touch)
+            if (resumeBtn.contains(touch.x, touch.y)) resumeGame()
+            if (menuBtn.contains(touch.x, touch.y)) goToMainMenu()
         }
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.BACK)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) ||
+            Gdx.input.isKeyJustPressed(Input.Keys.BACK)
+        ) {
             resumeGame()
         }
     }
 
-    private fun Vector3.overlaps(btn: Button): Boolean {
-        return x >= btn.x && x <= btn.x + btn.width &&
-            y >= btn.y && y <= btn.y + btn.height
+    private fun resumeGame() {
+        game.screen = gameScreen
     }
 
-    private fun resumeGame() { game.screen = gameScreen }
     private fun goToMainMenu() {
         gameScreen.dispose()
         game.screen = MenuScreen(game)
     }
 
-    private fun drawRoundedRect(x: Float, y: Float, width: Float, height: Float, radius: Float) {
-        shapeRenderer.rect(x + radius, y, width - 2 * radius, height)
-        shapeRenderer.rect(x, y + radius, width, height - 2 * radius)
-        shapeRenderer.circle(x + radius, y + radius, radius)
-        shapeRenderer.circle(x + width - radius, y + radius, radius)
-        shapeRenderer.circle(x + radius, y + height - radius, radius)
-        shapeRenderer.circle(x + width - radius, y + height - radius, radius)
+    override fun resize(width: Int, height: Int) {
+        viewport.update(width, height, true)
+        layoutButtons()
     }
 
-    override fun resize(width: Int, height: Int) { viewport.update(width, height, true) }
     override fun pause() {}
     override fun resume() {}
     override fun hide() {}
+
     override fun dispose() {
-        batch.dispose(); shapeRenderer.dispose(); titleFont.dispose(); buttonFont.dispose()
+        batch.dispose()
+        shapeRenderer.dispose()
+        buttonFont.dispose()
+        pauseTitle.dispose()
+        pikachuTexture.dispose()
     }
 }

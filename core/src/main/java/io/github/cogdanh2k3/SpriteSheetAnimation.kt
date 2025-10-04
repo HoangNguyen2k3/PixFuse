@@ -40,7 +40,9 @@ class SpriteSheetAnimation(
     fun getFrame(looping: Boolean = true): TextureRegion {
         return animation.getKeyFrame(stateTime, looping)
     }
-
+    fun getFrame(stateTime: Float, looping: Boolean): TextureRegion {
+        return animation.getKeyFrame(stateTime, looping)
+    }
     /** get frame at arbitrary time — useful to draw multiple instances with offsets */
     fun getFrameAt(time: Float, looping: Boolean = true): TextureRegion {
         return animation.getKeyFrame(time, looping)
