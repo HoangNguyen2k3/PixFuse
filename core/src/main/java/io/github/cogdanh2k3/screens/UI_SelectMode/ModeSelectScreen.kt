@@ -126,7 +126,7 @@ class ModeSelectScreen(val game: Main) : Screen {
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
                     // TODO: Thay bằng BattleMode thực tế sau
-                    game.screen = GameScreen(game, io.github.cogdanh2k3.Mode.BattleMode(Boss("Pikachu",100,2,"Boss/pikaBoss.png")))
+                    game.screen = GameScreen(game, io.github.cogdanh2k3.Mode.BattleMode(Boss("Pikachu",1000,2,"Boss/pikaBoss.png")))
                 }
             })
         }

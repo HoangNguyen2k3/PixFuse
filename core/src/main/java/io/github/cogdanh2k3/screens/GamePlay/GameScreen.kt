@@ -377,11 +377,11 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
 
         // ===== Draw shapes =====
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
-
+        drawPauseButton()   // <--- thêm dòng này
         if(bool_normalscreen){
             drawHeader()        // Box điểm số
             drawTargetBox()     // Box target
-            drawPauseButton()   // <--- thêm dòng này
+
         }
         shapeRenderer.end()
 

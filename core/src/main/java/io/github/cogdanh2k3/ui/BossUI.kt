@@ -11,6 +11,7 @@ import io.github.cogdanh2k3.Mode.BattleMode
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.actions.Actions
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
+import io.github.cogdanh2k3.utils.FontUtils
 
 class BossUI(
     private val stage: Stage,
@@ -41,6 +42,8 @@ class BossUI(
     private var isTyping = false
     private var storyVisible = false
     private var typingAction: com.badlogic.gdx.scenes.scene2d.Action? = null
+    private val storyPortrait: Image
+    private val blackOverlay: Image
 
     init {
         val bossTex = Texture(mode.boss.texturePath.ifEmpty { "UI/pikachu.png" })
@@ -59,10 +62,9 @@ class BossUI(
         hpBarFill.setPosition(hpBarBg.x, hpBarBg.y)
 
         // Font rõ ràng hơn
-        val font = BitmapFont().apply {
-            data.setScale(1.4f) // phóng to chữ
-            color = Color.WHITE
-        }
+        val font = FontUtils.loadCustomFont(20, Color.WHITE)
+        font.data.setScale(1.4f)
+
 
         // Viền đen nhẹ cho dễ đọc
         val labelStyle = Label.LabelStyle(font, Color.WHITE)
@@ -96,17 +98,44 @@ class BossUI(
 
 
 
-        // --- Story Popup ---
-        storyGroup = Group()
-        storyBg = Image(Texture("UI/dialog_box.png"))
-        storyBg.setSize(stage.width * 0.8f, 180f)
-        storyBg.setPosition(stage.width * 0.1f, 50f)
+        // --- Overlay đen mờ toàn màn ---
+        val pixmap = com.badlogic.gdx.graphics.Pixmap(1, 1, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888)
+        pixmap.setColor(0f, 0f, 0f, 1f) // màu đen full
+        pixmap.fill()
+        val blackTex = Texture(pixmap)
+        pixmap.dispose()
 
-        storyName = Label("", Label.LabelStyle(BitmapFont(), Color.SKY))
-        storyName.setFontScale(1.3f)
+        blackOverlay = Image(blackTex)
+        blackOverlay.setSize(stage.width, stage.height)
+        blackOverlay.color.a = 0f // ban đầu trong suốt
+        blackOverlay.isVisible = false
+        stage.addActor(blackOverlay)
+
+        // --- Story Group ---
+        storyGroup = Group()
+
+        // Khung thoại căn giữa
+        storyBg = Image(Texture("UI/dialog_box.png"))
+        storyBg.setSize(stage.width * 0.8f, 200f)
+        storyBg.setPosition((stage.width - storyBg.width) / 2, stage.height * 0.15f)
+
+        // Ảnh boss đại diện
+        storyPortrait = Image(bossTex)
+        storyPortrait.setSize(200f, 200f)
+        storyPortrait.setPosition(
+            storyBg.x + (storyBg.width - storyPortrait.width) / 2f,  // căn giữa theo ngang
+            storyBg.y + storyBg.height + 20f                        // cao hơn box 20px
+        )
+// Font tùy chỉnh cho tên
+        val nameFont = FontUtils.loadCustomFont(24, Color.SKY) // cỡ chữ 24
+        nameFont.data.setScale(1.3f)
+        storyName = Label("", Label.LabelStyle(nameFont, Color.SKY))
         storyName.setPosition(storyBg.x + 30f, storyBg.y + storyBg.height - 40f)
 
-        storyText = Label("", Label.LabelStyle(BitmapFont(), Color.WHITE))
+// Font tùy chỉnh cho text story
+        val textFont = FontUtils.loadCustomFont(20, Color.WHITE) // cỡ chữ 20
+        textFont.data.setScale(1.2f)
+        storyText = Label("", Label.LabelStyle(textFont, Color.WHITE))
         storyText.setWrap(true)
         storyText.setWidth(storyBg.width - 60f)
         storyText.setAlignment(Align.topLeft)
@@ -115,18 +144,17 @@ class BossUI(
         storyGroup.addActor(storyBg)
         storyGroup.addActor(storyName)
         storyGroup.addActor(storyText)
+        storyGroup.addActor(storyPortrait)
         storyGroup.isVisible = false
         stage.addActor(storyGroup)
 
-        // Xử lý click để skip / next
+        // Click skip / next
         storyGroup.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 if (isTyping) {
-                    // Hiện full dòng hiện tại
                     storyText.setText(storyFullText)
                     isTyping = false
                 } else {
-                    // Chuyển sang dòng tiếp
                     nextStoryLine()
                 }
             }
@@ -157,18 +185,6 @@ class BossUI(
 
 
 
-
-    fun showStoryPopup(bossName: String, textLines: List<String>) {
-        storyLines = textLines
-        currentLineIndex = 0
-        storyVisible = true
-        storyName.setText(bossName)
-        storyGroup.isVisible = true
-        storyGroup.color.a = 0f
-        storyGroup.addAction(Actions.fadeIn(0.3f))
-
-        showLine(storyLines[currentLineIndex])
-    }
 
     private fun showLine(line: String) {
         // Hủy hành động gõ cũ (nếu có)
@@ -205,10 +221,39 @@ class BossUI(
         }
     }
 
+    fun showStoryPopup(bossName: String, textLines: List<String>, portraitPath: String = "UI/pikachu.png") {
+        storyLines = textLines
+        currentLineIndex = 0
+        storyVisible = true
+
+        // set ảnh portrait từ boss
+        storyPortrait.drawable = Image(Texture(mode.boss.texturePath)).drawable
+
+        storyName.setText(bossName)
+        storyGroup.isVisible = true
+        blackOverlay.isVisible = true
+
+        // reset alpha về 0
+        blackOverlay.color.a = 0f
+        storyGroup.color.a = 0f
+
+        // đặt alpha mục tiêu và chạy fade
+        blackOverlay.addAction(Actions.sequence(
+            Actions.alpha(0.6f, 0.3f) // fade tới 0.6 trong 0.3s
+        ))
+        storyGroup.addAction(Actions.fadeIn(0.3f))
+
+        showLine(storyLines[currentLineIndex])
+    }
+
     fun hideStory() {
         storyGroup.addAction(Actions.sequence(
             Actions.fadeOut(0.3f),
             Actions.run { storyGroup.isVisible = false }
+        ))
+        blackOverlay.addAction(Actions.sequence(
+            Actions.fadeOut(0.3f),
+            Actions.run { blackOverlay.isVisible = false }
         ))
         storyVisible = false
     }
