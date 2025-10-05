@@ -74,6 +74,20 @@ class Board(val size: Int) {
         val (dx, dy) = gridToPos(row, col)
         explosionsBoom.add(ExplosionBoom(dx, dy))
     }
+    //ExplosionBoomBoos
+    private val explosionBoombossSheet = SpriteSheetAnimation(
+        "effects/explosionboom.png",
+        rows = 8, cols = 10,
+        frameDuration = 0.01f,
+        playMode = com.badlogic.gdx.graphics.g2d.Animation.PlayMode.NORMAL
+    )
+    data class ExplosionBoomboos(val x: Float, val y: Float, var time: Float = 0f)
+    private val explosionsBoomboss = mutableListOf<ExplosionBoomboos>()
+
+    // 👉 Thêm hàm add theo toạ độ thật
+    fun addExplosionBoomBoss(x: Float, y: Float) {
+        explosionsBoomboss.add(ExplosionBoomboos(x, y))
+    }
     //-------------Thaw Ice-------------------
     private val explosionThawSheet = SpriteSheetAnimation(
         "effects/ice_broken.png",
@@ -232,6 +246,16 @@ fun setTile(r: Int, c: Int, tile: Tile) {
         val drawX = x + col * (tileSize + padding)
         val drawY = y + (size - 1 - row) * (tileSize + padding)
         return drawX to drawY
+    }
+    // --- Lấy vị trí góc dưới trái của tile (để vẽ hình) ---
+    fun getTilePosition(row: Int, col: Int): Pair<Float, Float> {
+        return gridToPos(row, col)
+    }
+
+    // --- Lấy vị trí trung tâm tile (thường dùng cho hiệu ứng bay, damage, v.v.) ---
+    fun getTileCenter(row: Int, col: Int): Pair<Float, Float> {
+        val (x, y) = gridToPos(row, col)
+        return Pair(x + tileSize / 2f, y + tileSize / 2f)
     }
 
     fun addMoveAnim(value: Int, fromR: Int, fromC: Int, toR: Int, toC: Int) {
@@ -431,6 +455,7 @@ fun setTile(r: Int, c: Int, tile: Tile) {
                 iceThaw.remove()
             }
         }
+        //---------8. Vẽ boom thunder----------------
         val thunder = explosionsThunder.iterator()
         while (thunder.hasNext()) {
             val e = thunder.next()
@@ -444,14 +469,30 @@ fun setTile(r: Int, c: Int, tile: Tile) {
                 thunder.remove()
             }
         }
+        //-------------9. Vẽ boom boss----------------
+        val boomboss = explosionsBoomboss.iterator()
+        while (boomboss.hasNext()) {
+            val e = boomboss.next()
+            e.time += dt
+            val frame = explosionBoombossSheet.getFrameAt(e.time, looping = false)
+            batch.draw(
+                frame,
+                e.x - frame.regionWidth / 2f,
+                e.y - frame.regionHeight / 2f
+            )
+            if (explosionBoombossSheet.isAnimationFinished(e.time)) {
+                boomboss.remove()
+            }
+        }
     }
     fun clearAllDebuffs(): Int {
         var count = 0
         for (x in 0 until size) {
             for (y in 0 until size) {
                 val tile = grid[x][y]
-
-                // Kiểm tra nếu tile có bất kỳ hiệu ứng bất lợi nào
+                if(tile.value != TILE_WALL&& tile.value!=0){
+                    addExplosion(x, y)                // Kiểm tra nếu tile có bất kỳ hiệu ứng bất lợi nào
+                }
                 if (tile.isBoom || tile.frozen > 0) {
                     // Xóa các hiệu ứng, giữ nguyên value
                     if (tile.isBoom) {
@@ -462,7 +503,7 @@ fun setTile(r: Int, c: Int, tile: Tile) {
                         tile.frozen = 0
                     }
                     // Hiệu ứng nổ khi dọn tile
-                    addExplosion(x, y)
+
                     count++
                 }
             }

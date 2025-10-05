@@ -48,7 +48,7 @@ class LeaderboardScreen(private val game: Main) : Screen {
         for (i in 0 until 10) {
             leaderboard[i] = prefs.getInteger("score_$i", 0)
         }
-        for(i in 0 until list_high_score.size){
+        for(i in 0 until 10){
             leaderboard[i] = list_high_score[i]
         }
         val table = Table()

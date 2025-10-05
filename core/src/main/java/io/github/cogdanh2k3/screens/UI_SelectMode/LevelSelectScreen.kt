@@ -59,13 +59,13 @@ class LevelSelectScreen(val game: Main) : Screen {
     private val dots = mutableListOf<Image>()
     private val dotTex = createDotTexture(20)
     // Tính world hiện tại dựa trên scrollX
-/*    private var currentWorld: Int
-        get() {
-            val pageWidth = Gdx.graphics.width.toFloat()
-            val center = scrollPane.scrollX + pageWidth / 2f
-            val worldIndex = (center / pageWidth).toInt()
-            return (worldIndex + 1).coerceIn(1, dataBG.worldBackgrounds.size)
-        }*/
+    /*    private var currentWorld: Int
+            get() {
+                val pageWidth = Gdx.graphics.width.toFloat()
+                val center = scrollPane.scrollX + pageWidth / 2f
+                val worldIndex = (center / pageWidth).toInt()
+                return (worldIndex + 1).coerceIn(1, dataBG.worldBackgrounds.size)
+            }*/
     private var _currentWorld: Int = 1
     var currentWorld: Int
         get() {
@@ -107,6 +107,18 @@ class LevelSelectScreen(val game: Main) : Screen {
         root.setFillParent(true)
         stage.addActor(root)
 
+        val backTex = Texture("UI/backButton.png") // bạn tạo ảnh mũi tên hoặc chữ back
+        val backBtn = ImageButton(TextureRegionDrawable(TextureRegion(backTex)))
+        backBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.screen = ModeSelectScreen(game) // quay lại màn hình chính
+            }
+        })
+        val backTable = Table()
+        backTable.setFillParent(true)   // QUAN TRỌNG
+        backTable.top().left().pad(20f)
+        backTable.add(backBtn).size(100f) // chỉnh kích thước nút
+        stage.addActor(backTable)
         // Scroll container
         val worldsTable = Table()
         for (world in 1..LevelManager.worlds.size) {
@@ -256,31 +268,31 @@ class LevelSelectScreen(val game: Main) : Screen {
         }
 
         game.batch.end()
-/*        game.batch.begin()
+        /*        game.batch.begin()
 
-// 1. Vẽ gradient background (dùng ShapeRenderer hoặc 1 texture nhỏ 1x2)
-// Ví dụ đơn giản: fill màu đen đậm → đen nhạt
-// => dễ nhất là bạn tạo sẵn 1 texture gradient.png và stretch full screen:
-        game.batch.draw(gradientTexture, 0f, 0f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
+        // 1. Vẽ gradient background (dùng ShapeRenderer hoặc 1 texture nhỏ 1x2)
+        // Ví dụ đơn giản: fill màu đen đậm → đen nhạt
+        // => dễ nhất là bạn tạo sẵn 1 texture gradient.png và stretch full screen:
+                game.batch.draw(gradientTexture, 0f, 0f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
 
-// 2. Vẽ world background ở giữa màn
-        val bg = dataBG.worldBackgrounds[currentWorld]
-        bg?.let {
-            val bgWidth = it.width.toFloat()
-            val bgHeight = it.height.toFloat()
+        // 2. Vẽ world background ở giữa màn
+                val bg = dataBG.worldBackgrounds[currentWorld]
+                bg?.let {
+                    val bgWidth = it.width.toFloat()
+                    val bgHeight = it.height.toFloat()
 
-            // scale theo chiều ngang nếu muốn che hết width
-            val scale = Gdx.graphics.width.toFloat() / bgWidth
-            val drawWidth = bgWidth * scale
-            val drawHeight = bgHeight * scale
+                    // scale theo chiều ngang nếu muốn che hết width
+                    val scale = Gdx.graphics.width.toFloat() / bgWidth
+                    val drawWidth = bgWidth * scale
+                    val drawHeight = bgHeight * scale
 
-            val x = (Gdx.graphics.width - drawWidth) / 2f   // căn giữa ngang
-            val y = (Gdx.graphics.height - drawHeight) / 2f // căn giữa dọc
+                    val x = (Gdx.graphics.width - drawWidth) / 2f   // căn giữa ngang
+                    val y = (Gdx.graphics.height - drawHeight) / 2f // căn giữa dọc
 
-            game.batch.draw(it, x, y, drawWidth, drawHeight)
-        }
+                    game.batch.draw(it, x, y, drawWidth, drawHeight)
+                }
 
-        game.batch.end()*/
+                game.batch.end()*/
 
         updateDots()
         stage.act(delta)

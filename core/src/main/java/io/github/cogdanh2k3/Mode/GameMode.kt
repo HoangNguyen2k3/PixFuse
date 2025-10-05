@@ -1,6 +1,20 @@
 package io.github.cogdanh2k3.Mode
+import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.math.Interpolation
+import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.actions.Actions
+import com.badlogic.gdx.scenes.scene2d.ui.Image
+import com.badlogic.gdx.scenes.scene2d.ui.Label
+import com.badlogic.gdx.utils.Align
+import io.github.cogdanh2k3.Boss
 import io.github.cogdanh2k3.DataGame.DataGame
+import io.github.cogdanh2k3.audio.SoundId
+import io.github.cogdanh2k3.audio.SoundManager
 import io.github.cogdanh2k3.game.Board
+import io.github.cogdanh2k3.ui.BossUI
+import io.github.cogdanh2k3.utils.FontUtils
 
 interface GameMode {
     val name: String
@@ -45,7 +59,8 @@ class EndlessMode : GameMode {
 class TargetMode(
     private val targetValues: List<Int>,         // nhiều giá trị mục tiêu
     private val targetNames: List<String> = emptyList() // tên tương ứng (nếu có)
-) : GameMode {
+) : GameMode
+{
     override fun init() {
     }
     override fun specialEffect() {
@@ -122,7 +137,8 @@ class TargetMode(
 }
 class TimedMode(
      val durationSeconds: Float = 33f // 3 phút
-) : GameMode {
+) : GameMode
+{
     override fun init() {
         remainingTime = durationSeconds
     }
@@ -167,3 +183,136 @@ class TimedMode(
         return "$minutes:$seconds"
     }
 }
+
+class BattleMode(
+    val boss: Boss,
+    val maxMoves: Int = 25
+) : GameMode {
+
+    override val name: String = "Battle"
+    override val data: DataGame = DataGame()
+
+    var remainingMoves = maxMoves
+        private set
+
+    // ✅ Hàng đợi damage
+    private val pendingAttacks = mutableListOf<PendingAttack>()
+
+    data class PendingAttack(
+        val fromX: Float,
+        val fromY: Float,
+        val toX: Float,
+        val toY: Float,
+        val damage: Int
+    )
+
+    override fun init() {
+        remainingMoves = maxMoves
+        boss.currentHP = boss.hp
+        pendingAttacks.clear()
+    }
+
+    fun onMoveUsed() {
+        remainingMoves--
+    }
+
+    override fun specialEffect() {}
+    override fun checkWin(board: Board, score: Int): Boolean = boss.isDefeated()
+    override fun checkLose(board: Board, score: Int): Boolean = remainingMoves <= 0 && !boss.isDefeated()
+
+    override fun getTargetDescription(): String {
+        return "${boss.name}: ${boss.currentHP}/${boss.hp} HP  |  Lượt: $remainingMoves"
+    }
+
+    // ✅ Thêm cả tọa độ boss (toX, toY)
+    fun queueAttack(fromX: Float, fromY: Float, toX: Float, toY: Float, damage: Int) {
+        if (damage > 0) {
+            pendingAttacks.add(PendingAttack(fromX, fromY, toX, toY, damage))
+        }
+    }
+
+    // ✅ Thực thi các đòn tấn công
+    fun applyQueuedDamages(board: Board, stage: Stage, bossUI: BossUI? = null) {
+        val bossPos = bossUI?.getBossCenterPosition() ?: Pair(stage.width / 2f, stage.height - 200f)
+        val (bossX, bossY) = bossPos
+
+        for (attack in pendingAttacks) {
+            addDamageEffect(board, stage, attack.fromX, attack.fromY, bossX, bossY, attack.damage)
+            boss.takeDamage(attack.damage)
+        }
+
+        if (pendingAttacks.isNotEmpty()) {
+            SoundManager.playSfx(SoundId.MERGE)
+        }
+
+        pendingAttacks.clear()
+        bossUI?.updateUI()
+
+        if (boss.isDefeated()) onBossDefeated()
+        else if (remainingMoves <= 0) onLose()
+    }
+
+    private fun addDamageEffect(
+        board: Board,
+        stage: Stage,
+        fromX: Float,
+        fromY: Float,
+        toX: Float,
+        toY: Float,
+        damage: Int
+    ) {
+        val bullet = Image(Texture("Boss/bulletBoss.png"))
+        bullet.setSize(80f, 80f)
+        bullet.setOrigin(Align.center)
+        bullet.setPosition(fromX - bullet.width / 2f, fromY - bullet.height / 2f)
+        stage.addActor(bullet)
+        bullet.toFront()
+
+        // ✅ Tính độ cao bay động:
+        // bay lên đến khoảng 85% chiều cao stage (gần đỉnh)
+        val targetY = stage.height * 0.85f
+        val distanceY = (targetY - fromY).coerceAtLeast(100f) // tối thiểu bay 100px
+
+        bullet.addAction(
+            Actions.sequence(
+                Actions.parallel(
+                    Actions.moveBy(0f, distanceY, 0.7f, Interpolation.sineOut),
+                    Actions.rotateBy(360f, 0.7f)
+                ),
+                Actions.fadeOut(0.2f),
+                Actions.run {
+                    // Vụ nổ tại vị trí viên đạn biến mất (đỉnh đường bay)
+                    board.addExplosionBoomBoss(fromX, fromY + distanceY)
+                    bullet.remove()
+                }
+            )
+        )
+
+        // ✅ Floating damage text bay cùng khu vực nổ
+        val label = Label("-$damage", Label.LabelStyle(BitmapFont(), Color.RED))
+        label.setFontScale(1.2f)
+        label.setPosition(fromX - label.width / 2f, fromY + distanceY)
+        stage.addActor(label)
+        label.toFront()
+        label.addAction(
+            Actions.sequence(
+                Actions.parallel(
+                    Actions.moveBy(0f, 100f, 1f, Interpolation.sineOut),
+                    Actions.fadeOut(0.5f)
+                ),
+                Actions.run { label.remove() }
+            )
+        )
+    }
+
+
+
+    fun onBossDefeated() {
+        println("🎉 Boss ${boss.name} đã bị đánh bại!")
+    }
+
+    fun onLose() {
+        println("💀 Thua! Hết lượt, boss ${boss.name} còn ${boss.currentHP} HP.")
+    }
+}
+

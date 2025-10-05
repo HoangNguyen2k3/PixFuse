@@ -16,6 +16,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.viewport.ScreenViewport
+import io.github.cogdanh2k3.Boss
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.Mode.EndlessMode
 import io.github.cogdanh2k3.Mode.TimedMode
@@ -23,7 +24,6 @@ import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 import io.github.cogdanh2k3.utils.FontUtils
 
 class ModeSelectScreen(val game: Main) : Screen {
-    //private val background = Texture("titles/bg_game.png")
     private val background = Texture("UI/bg_new.png")
     private val stage = Stage(ScreenViewport())
     private val skin = Skin()
@@ -40,17 +40,45 @@ class ModeSelectScreen(val game: Main) : Screen {
         skin.add("default", labelStyle)
 
         // Button styles
-        val classicStyle = createButtonStyle(Color(0.1f, 0.6f, 0.9f, 0.9f), Color(0.1f, 0.7f, 1f, 0.95f), Color(0f, 0.5f, 0.8f, 0.95f), font)
-        val endlessStyle = createButtonStyle(Color(0.2f, 0.8f, 0.2f, 0.9f), Color(0.3f, 0.9f, 0.3f, 0.95f), Color(0.1f, 0.7f, 0.1f, 0.95f), font)
-        val timedStyle = createButtonStyle(Color(0.9f, 0.6f, 0.1f, 0.9f), Color(1f, 0.7f, 0.2f, 0.95f), Color(0.8f, 0.5f, 0f, 0.95f), font)
+        val classicStyle = createButtonStyle(
+            Color(0.1f, 0.6f, 0.9f, 0.9f),
+            Color(0.1f, 0.7f, 1f, 0.95f),
+            Color(0f, 0.5f, 0.8f, 0.95f),
+            font
+        )
+
+        val endlessStyle = createButtonStyle(
+            Color(0.2f, 0.8f, 0.2f, 0.9f),
+            Color(0.3f, 0.9f, 0.3f, 0.95f),
+            Color(0.1f, 0.7f, 0.1f, 0.95f),
+            font
+        )
+
+        val timedStyle = createButtonStyle(
+            Color(0.9f, 0.6f, 0.1f, 0.9f),
+            Color(1f, 0.7f, 0.2f, 0.95f),
+            Color(0.8f, 0.5f, 0f, 0.95f),
+            font
+        )
+
+        // 🌟 Battle mode style (xanh da trời)
+        val battleStyle = createButtonStyle(
+            upColor = Color(0.2f, 0.5f, 1f, 0.9f),
+            overColor = Color(0.3f, 0.6f, 1f, 0.95f),
+            downColor = Color(0.1f, 0.4f, 0.9f, 0.95f),
+            font = font,
+            fontColor = Color.WHITE
+        )
+
         val lockedStyle = createButtonStyle(
-            upColor = Color(0.9f, 0.9f, 0.9f, 1f),     // trạng thái bình thường đậm hơn
-            overColor = Color(0.4f, 0.4f, 0.4f, 1f),  // hover sáng hơn 1 chút
-            downColor = Color(0.2f, 0.2f, 0.2f, 1f),   // nhấn đậm hơn
+            upColor = Color(0.9f, 0.9f, 0.9f, 1f),
+            overColor = Color(0.4f, 0.4f, 0.4f, 1f),
+            downColor = Color(0.2f, 0.2f, 0.2f, 1f),
             font = font,
             fontColor = Color.GRAY,
             disabledFontColor = Color.DARK_GRAY
         )
+
         // Layout
         val root = Table()
         root.setFillParent(true)
@@ -93,6 +121,16 @@ class ModeSelectScreen(val game: Main) : Screen {
             })
         }
 
+        // 🌟 Nút Battle Mode mới
+        val battleButton = TextButton("BATTLE MODE", battleStyle).apply {
+            addListener(object : ClickListener() {
+                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                    // TODO: Thay bằng BattleMode thực tế sau
+                    game.screen = GameScreen(game, io.github.cogdanh2k3.Mode.BattleMode(Boss("Pikachu",100,2,"Boss/pikaBoss.png")))
+                }
+            })
+        }
+
         val mode4Button = TextButton("MODE 4 (LOCK)", lockedStyle).apply { isDisabled = true }
 
         // Sắp xếp UI
@@ -105,6 +143,7 @@ class ModeSelectScreen(val game: Main) : Screen {
         root.add(classicButton).colspan(2).width(1000f).height(200f).pad(40f).row()
         root.add(endlessButton).colspan(2).width(1000f).height(200f).pad(40f).row()
         root.add(timedButton).colspan(2).width(1000f).height(200f).pad(40f).row()
+        root.add(battleButton).colspan(2).width(1000f).height(200f).pad(40f).row() // 👈 thêm nút ở đây
         root.add(mode4Button).colspan(2).width(1000f).height(200f).pad(40f).row()
     }
 
@@ -112,13 +151,11 @@ class ModeSelectScreen(val game: Main) : Screen {
         val pixmap = Pixmap(width, height, Pixmap.Format.RGBA8888)
         pixmap.setColor(color)
 
-        // Góc tròn
         pixmap.fillCircle(radius, radius, radius)
         pixmap.fillCircle(width - radius, radius, radius)
         pixmap.fillCircle(radius, height - radius, radius)
         pixmap.fillCircle(width - radius, height - radius, radius)
 
-        // Kết nối các cạnh
         pixmap.fillRectangle(radius, 0, width - 2 * radius, height)
         pixmap.fillRectangle(0, radius, width, height - 2 * radius)
 

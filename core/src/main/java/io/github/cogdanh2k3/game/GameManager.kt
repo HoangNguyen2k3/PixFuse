@@ -1,12 +1,16 @@
 package io.github.cogdanh2k3.game
 
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.utils.Timer
 import io.github.cogdanh2k3.DataGame.LevelData
+import io.github.cogdanh2k3.Mode.BattleMode
 import io.github.cogdanh2k3.Mode.GameMode
 import io.github.cogdanh2k3.Mode.TimedMode
 import io.github.cogdanh2k3.audio.SoundId
 import io.github.cogdanh2k3.audio.SoundManager
+import io.github.cogdanh2k3.screens.GamePlay.GameScreen
+import io.github.cogdanh2k3.ui.BossUI
 import kotlin.random.Random
 const val TILE_WALL = -1
 const val TILE_FROZEN = -2
@@ -23,6 +27,8 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
     var doubleNextMerge: Boolean = false
     var activeWallBooster: Boolean = false
     var activeBombRowBooster: Boolean = false
+    public lateinit var bossUI: BossUI
+    lateinit var stage: Stage
     fun InitData(){
         if(levelData != null && levelData.id != -1){
             board.tileImages = mode.data.themes[levelData.currentWorld-1].images
@@ -52,7 +58,8 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
         board.addSpawnAnim(r, c, value)
     }
 }*/
-fun spawnTile() {
+
+    fun spawnTile() {
     if (hasWon || hasLost) return
     val empty = board.getEmptyCells()
     if (empty.isEmpty()) return
@@ -415,7 +422,9 @@ fun spawnTile() {
                     board.addMergeAnim(index, toC, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
                     mode.specialEffect()
-
+if(mode is BattleMode){
+    processInBattleMode(stage, index, toC)
+}
                     // Nếu merge này bao gồm thunder => trigger thunder buff tại ô merge (index,toC)
                     if (action.isThunderMerged) {
                         triggerThunderBuff(index, toC)
@@ -432,15 +441,35 @@ fun spawnTile() {
                     board.addMergeAnim(toR, index, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
                     mode.specialEffect()
-
+                    if(mode is BattleMode){
+                        processInBattleMode(stage, toR, index)
+                    }
                     if (action.isThunderMerged) {
                         triggerThunderBuff(toR, index)
                     }
                 }
             }
         }
-
+        if (mode is BattleMode) {
+            mode.applyQueuedDamages(board, stage, bossUI)
+        }
         return output
+    }
+    fun processInBattleMode(stage: Stage, r: Int, c: Int) {
+        if (mode is BattleMode) {
+            val tile = board.getTile(r, c)
+            val (tileX, tileY) = board.getTilePosition(r, c)
+            val value = board.getTile(r, c).value.takeIf { it > 0 } ?: 2 // fallback tránh 0
+            val damage = value * mode.boss.damageMultiplier
+
+            mode.queueAttack(tileX, tileY, tileX, tileY, damage)
+            mode.onMoveUsed()
+
+            when {
+                mode.checkWin(board, score) -> mode.onBossDefeated()
+                mode.checkLose(board, score) -> mode.onLose()
+            }
+        }
     }
 
 

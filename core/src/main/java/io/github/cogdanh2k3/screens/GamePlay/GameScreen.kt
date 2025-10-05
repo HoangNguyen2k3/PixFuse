@@ -33,7 +33,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
+import io.github.cogdanh2k3.Mode.BattleMode
 import io.github.cogdanh2k3.ui.BoosterMessage
+import io.github.cogdanh2k3.ui.BossUI
 import io.github.cogdanh2k3.ui.HelpPopup
 
 class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? = null) : ScreenAdapter() {
@@ -102,11 +104,13 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
 
     private lateinit var helpButton: ImageButton
     private lateinit var helpPopup: HelpPopup
+
+    private var bool_normalscreen: Boolean = true
     init {
         manager.InitData()
         manager.spawnTile()
         manager.spawnTile()
-
+        manager.stage=stage
         val gestureDetector = GestureDetector(InputHandler(manager, this))
         Gdx.input.inputProcessor = gestureDetector
 
@@ -120,7 +124,21 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         mode.init()
         // Chuyển input sang stage để bấm booster được
         Gdx.input.inputProcessor = stage
+        if (mode is BattleMode) {
+            // Ẩn các label điểm
+            bool_normalscreen = false
 
+            // Thêm UI boss
+             manager.bossUI = BossUI(stage, mode)
+            manager.bossUI.showStoryPopup(
+                bossName = "Long Thần Hỏa Diệm",
+                textLines = listOf(
+                    "Kẻ phàm trần... ngươi dám bước vào hang ổ của ta ư?",
+                    "Ngọn lửa này sẽ thiêu rụi linh hồn yếu ớt của ngươi!",
+                    "Chuẩn bị cho trận chiến sinh tử đi!"
+                )
+            )
+        }
         // Drawable
         val booster1Drawable = TextureRegionDrawable(booster1Tex)
         val booster2Drawable = TextureRegionDrawable(booster2Tex)
@@ -322,8 +340,11 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
     }
 
     private fun updateGame(delta: Float) {
-        if(manager.mode.name == "Timed"){
+        if(mode is TimedMode){
             manager.update()
+        }
+        if (mode is BattleMode) {
+            manager.bossUI.updateUI()
         }
         if (manager.isMoved) {
             manager.update()
@@ -356,19 +377,22 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
 
         // ===== Draw shapes =====
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
-        drawHeader()        // Box điểm số
-        drawTargetBox()     // Box target
-        drawPauseButton()   // <--- thêm dòng này
 
+        if(bool_normalscreen){
+            drawHeader()        // Box điểm số
+            drawTargetBox()     // Box target
+            drawPauseButton()   // <--- thêm dòng này
+        }
         shapeRenderer.end()
 
         // ===== Draw text, board =====
         batch.begin()
+        if(bool_normalscreen){
+            drawHeaderText()       // SCORE, BES
+            drawTargetText()       // target hoặc vô cực
+            drawPauseButtonText()   // <--- và dòng này
+        }
         drawPauseButtonText()
-        drawHeaderText()       // SCORE, BEST
-        //drawScoreText()        // số điểm
-        drawTargetText()       // target hoặc vô cực
-        drawPauseButtonText()   // <--- và dòng này
 //        drawBoosterButtons(batch);
         board.draw(batch)      // grid
         //drawInstructions()     // text hướng dẫn
