@@ -40,12 +40,16 @@ class EndlessMode : GameMode {
     }
     override fun checkLose(board: Board, score: Int): Boolean {
         // Lose khi không còn ô trống và không merge được
-        if (board.getEmptyCells().isNotEmpty()) return false
+        val hasUsableEmpty = board.getEmptyCells().any { (r, c) ->
+            val tile = board.getTile(r, c)
+            tile.frozen <= 0   // ô trống usable nếu frozen <= 0
+        }
+        if (hasUsableEmpty) return false  // còn ít nhất 1 ô trống usable → chưa thua
         for (r in 0 until board.size) {
             for (c in 0 until board.size) {
                 val v = board.getTile(r, c)
-                if (r + 1 < board.size && v == board.getTile(r + 1, c)) return false
-                if (c + 1 < board.size && v == board.getTile(r, c + 1)) return false
+                if (r + 1 < board.size && v == board.getTile(r + 1, c)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+                if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
             }
         }
         return true
@@ -97,10 +101,7 @@ class TargetMode(
 
         return true // tất cả target đều match
     }
-
-
-
-    override fun checkLose(board: Board, score: Int): Boolean {
+/*    override fun checkLose(board: Board, score: Int): Boolean {
         if (board.getEmptyCells().isNotEmpty()) return false
         for (r in 0 until board.size) {
             for (c in 0 until board.size) {
@@ -110,7 +111,23 @@ class TargetMode(
             }
         }
         return true
+    }*/
+override fun checkLose(board: Board, score: Int): Boolean {
+    // Lose khi không còn ô trống và không merge được
+    val hasUsableEmpty = board.getEmptyCells().any { (r, c) ->
+        val tile = board.getTile(r, c)
+        tile.frozen <= 0   // ô trống usable nếu frozen <= 0
     }
+    if (hasUsableEmpty) return false  // còn ít nhất 1 ô trống usable → chưa thua
+    for (r in 0 until board.size) {
+        for (c in 0 until board.size) {
+            val v = board.getTile(r, c)
+            if (r + 1 < board.size && v == board.getTile(r + 1, c)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+            if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+        }
+    }
+    return true
+}
     private fun valueToRoman(value: Int): String {
         if (value < 2) return "?"
         // log2(value) = bậc (2=2^1, 4=2^2, 8=2^3, ...)
@@ -187,7 +204,8 @@ class TimedMode(
 class BattleMode(
     val boss: Boss,
     val maxMoves: Int = 25
-) : GameMode {
+) : GameMode
+{
 
     override val name: String = "Battle"
     override val data: DataGame = DataGame()

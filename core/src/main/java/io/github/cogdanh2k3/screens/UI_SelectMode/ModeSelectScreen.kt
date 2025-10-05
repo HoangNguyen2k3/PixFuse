@@ -41,35 +41,34 @@ class ModeSelectScreen(val game: Main) : Screen {
 
         // Button styles
         val classicStyle = createButtonStyle(
-            Color(0.1f, 0.6f, 0.9f, 0.9f),
+            Color(0.1f, 0.6f, 0.9f, 1f),
             Color(0.1f, 0.7f, 1f, 0.95f),
             Color(0f, 0.5f, 0.8f, 0.95f),
             font
         )
 
         val endlessStyle = createButtonStyle(
-            Color(0.2f, 0.8f, 0.2f, 0.9f),
+            Color(0.2f, 0.8f, 0.2f, 1f),
             Color(0.3f, 0.9f, 0.3f, 0.95f),
             Color(0.1f, 0.7f, 0.1f, 0.95f),
             font
         )
 
         val timedStyle = createButtonStyle(
-            Color(0.9f, 0.6f, 0.1f, 0.9f),
+            Color(0.9f, 0.6f, 0.1f, 1f),
             Color(1f, 0.7f, 0.2f, 0.95f),
             Color(0.8f, 0.5f, 0f, 0.95f),
             font
         )
 
-        // 🌟 Battle mode style (xanh da trời)
+// 🌟 Battle mode style (tím đỏ)
         val battleStyle = createButtonStyle(
-            upColor = Color(0.2f, 0.5f, 1f, 0.9f),
-            overColor = Color(0.3f, 0.6f, 1f, 0.95f),
-            downColor = Color(0.1f, 0.4f, 0.9f, 0.95f),
+            upColor = Color(0.7f, 0.2f, 0.5f, 1f),    // tím đỏ nhạt khi bình thường
+            overColor = Color(0.8f, 0.3f, 0.6f, 0.95f), // tím đỏ nổi bật khi hover
+            downColor = Color(0.6f, 0.1f, 0.4f, 0.95f), // tím đỏ đậm khi nhấn
             font = font,
             fontColor = Color.WHITE
         )
-
         val lockedStyle = createButtonStyle(
             upColor = Color(0.9f, 0.9f, 0.9f, 1f),
             overColor = Color(0.4f, 0.4f, 0.4f, 1f),
@@ -105,7 +104,7 @@ class ModeSelectScreen(val game: Main) : Screen {
             })
         }
 
-        val endlessButton = TextButton("CHILL MODE", endlessStyle).apply {
+        val endlessButton = TextButton("ENDLESS MODE", endlessStyle).apply {
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
                     game.screen = GameScreen(game, EndlessMode())
@@ -131,7 +130,7 @@ class ModeSelectScreen(val game: Main) : Screen {
             })
         }
 
-        val mode4Button = TextButton("MODE 4 (LOCK)", lockedStyle).apply { isDisabled = true }
+        val mode4Button = TextButton("MODE 5 (LOCK)", lockedStyle).apply { isDisabled = true }
 
         // Sắp xếp UI
         root.top().pad(40f)

@@ -5,13 +5,13 @@ import com.badlogic.gdx.Preferences
 import com.badlogic.gdx.Screen
 import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.graphics.g2d.NinePatch
+import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.*
 import com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
-import com.badlogic.gdx.utils.viewport.Viewport
 import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.screens.MenuScreen
@@ -19,9 +19,10 @@ import io.github.cogdanh2k3.utils.FontUtils
 
 class LeaderboardScreen(private val game: Main) : Screen {
 
+    // ✅ Camera, viewport và stage riêng
     private val camera = OrthographicCamera()
     private val viewport = FitViewport(720f, 1280f, camera)
-    private val stage = Stage(viewport, game.batch)
+    private val stage = Stage(viewport)
 
     private val prefs: Preferences = Gdx.app.getPreferences("LeaderboardPrefs")
     private val leaderboard: MutableList<Int> = MutableList(10) { 0 }
@@ -29,11 +30,8 @@ class LeaderboardScreen(private val game: Main) : Screen {
     private lateinit var backButton: TextButton
     private lateinit var leaderboardImage: Texture
     private lateinit var gradientTexture: Texture
-    private var prevWidth = 0f
-    private var prevHeight = 0f
+
     override fun show() {
-        prevWidth = viewport.worldWidth
-        prevHeight = viewport.worldHeight
         Gdx.input.inputProcessor = stage
 
         // Gradient xanh–cam dọc
@@ -45,12 +43,11 @@ class LeaderboardScreen(private val game: Main) : Screen {
         leaderboardImage = Texture("UI/leaderboard.png")
         val list_high_score = SaveManager.gameSave.list_high_score
 
+        // Load điểm
         for (i in 0 until 10) {
-            leaderboard[i] = prefs.getInteger("score_$i", 0)
+            leaderboard[i] = prefs.getInteger("score_$i", list_high_score.getOrElse(i) { 0 })
         }
-        for(i in 0 until 10){
-            leaderboard[i] = list_high_score[i]
-        }
+
         val table = Table()
         table.setFillParent(true)
         table.top().padTop(100f)
@@ -99,8 +96,8 @@ class LeaderboardScreen(private val game: Main) : Screen {
         val btnStyle = TextButton.TextButtonStyle().apply {
             font = FontUtils.loadCustomFont(32, Color.WHITE)
             fontColor = Color.WHITE
-            up = makeButtonBackground(Color(0.05f, 0.25f, 0.5f, 1f))   // xanh đậm
-            down = makeButtonBackground(Color(0.03f, 0.2f, 0.4f, 1f))  // khi nhấn
+            up = makeButtonBackground(Color(0.05f, 0.25f, 0.5f, 1f))
+            down = makeButtonBackground(Color(0.03f, 0.2f, 0.4f, 1f))
         }
 
         backButton = TextButton("Back to Home", btnStyle)
@@ -111,6 +108,7 @@ class LeaderboardScreen(private val game: Main) : Screen {
 
         table.add(backButton).width(400f).height(90f)
     }
+
     private fun createVerticalGradient(top: Color, bottom: Color): Texture {
         val pixmap = Pixmap(1, 256, Pixmap.Format.RGBA8888)
         for (y in 0 until 256) {
@@ -153,11 +151,15 @@ class LeaderboardScreen(private val game: Main) : Screen {
         prefs.flush()
     }
 
+    private val bgBatch = SpriteBatch()
+
     override fun render(delta: Float) {
         ScreenUtils.clear(0f, 0f, 0f, 1f)
-        game.batch.begin()
-        game.batch.draw(gradientTexture, 0f, 0f, viewport.worldWidth, viewport.worldHeight)
-        game.batch.end()
+        bgBatch.projectionMatrix = viewport.camera.combined
+        bgBatch.begin()
+        bgBatch.draw(gradientTexture, 0f, 0f, viewport.worldWidth, viewport.worldHeight)
+        bgBatch.end()
+
         stage.act(delta)
         stage.draw()
     }
@@ -165,12 +167,15 @@ class LeaderboardScreen(private val game: Main) : Screen {
     override fun resize(width: Int, height: Int) {
         viewport.update(width, height, true)
     }
+
     override fun hide() {
-        viewport.setWorldSize(prevWidth, prevHeight)
-        viewport.update(Gdx.graphics.width, Gdx.graphics.height, true)
+        // ✅ Không thay đổi world size, chỉ clear stage
+        stage.clear()
     }
+
     override fun pause() {}
     override fun resume() {}
+
     override fun dispose() {
         stage.dispose()
         leaderboardImage.dispose()

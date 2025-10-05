@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator
 
 object FontUtils {
     fun loadCustomFont(size: Int, color: Color = Color.WHITE): BitmapFont {
-        val generator = FreeTypeFontGenerator(Gdx.files.internal("fonts/font_kkk.TTF"))
+        val generator = FreeTypeFontGenerator(Gdx.files.internal("fonts/font_new.ttf"))
         val parameter = FreeTypeFontGenerator.FreeTypeFontParameter().apply {
             this.size = size
             this.color = color
