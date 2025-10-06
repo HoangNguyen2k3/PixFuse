@@ -27,7 +27,7 @@ class KingdomScreen(val game: Main) : Screen {
     val currentUnlockedIndex = SaveManager.gameSave.int_levelBoss
     override fun show() {
         Gdx.input.inputProcessor = stage
-        val bg = Image(Texture("UI/kingdom_bg.png"))
+        val bg = Image(Texture("BG/background.png"))
         bg.setFillParent(true)
         stage.addActor(bg)
 
