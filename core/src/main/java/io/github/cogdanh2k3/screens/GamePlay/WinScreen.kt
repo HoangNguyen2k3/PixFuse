@@ -18,6 +18,7 @@ import io.github.cogdanh2k3.DataGame.GameSave
 import io.github.cogdanh2k3.DataGame.LevelData
 import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Main
+import io.github.cogdanh2k3.Mode.BattleMode
 import io.github.cogdanh2k3.Mode.GameMode
 import io.github.cogdanh2k3.Mode.TargetMode
 import io.github.cogdanh2k3.game.LevelManager
@@ -70,6 +71,13 @@ class WinScreen(
 
     override fun show() {
         SaveManager.gameSave.addScore(score)
+        if(mode is BattleMode){
+            if(SaveManager.gameSave.int_levelBoss<4){
+                SaveManager.gameSave.int_levelBoss++;
+            }else{
+                SaveManager.gameSave.int_levelBoss=0;
+            }
+        }
         SaveManager.saveGame()
         fireworkAnim = SpriteSheetAnimation("titles/firework.png", 5, 6, 0.05f)
         winTexture = Texture("UI/youwin.png")

@@ -17,7 +17,10 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import io.github.cogdanh2k3.Boss
+import io.github.cogdanh2k3.DataGame.BossDatabase
+import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Main
+import io.github.cogdanh2k3.Mode.BattleMode
 import io.github.cogdanh2k3.Mode.EndlessMode
 import io.github.cogdanh2k3.Mode.TimedMode
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
@@ -124,8 +127,16 @@ class ModeSelectScreen(val game: Main) : Screen {
         val battleButton = TextButton("BATTLE MODE", battleStyle).apply {
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                    val bossData = BossDatabase.getBossForLevel(SaveManager.gameSave.int_levelBoss)
+                    val boss = Boss(
+                        name = bossData.name,
+                        hp = bossData.hp,
+                        texturePath = bossData.texturePath
+                    )
+                    val mode = BattleMode(boss,bossData.turnAttackBoss)
+
                     // TODO: Thay bằng BattleMode thực tế sau
-                    game.screen = GameScreen(game, io.github.cogdanh2k3.Mode.BattleMode(Boss("Pikachu",1000,2,"Boss/pikaBoss.png")))
+                    game.screen = GameScreen(game, mode)
                 }
             })
         }

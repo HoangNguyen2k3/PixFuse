@@ -102,7 +102,8 @@ object SaveManager {
             list_high_score = mutableListOf(),
             bool_music = true,
             bool_sound = true,
-            bool_vibration = true
+            bool_vibration = true,
+            int_levelBoss = 1
         )
 
         Gdx.app.log("SaveManager", "✅ GameSave mặc định đã được tạo.")
