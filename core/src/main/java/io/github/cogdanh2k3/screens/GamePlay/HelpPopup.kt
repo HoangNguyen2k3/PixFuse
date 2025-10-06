@@ -13,13 +13,14 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.video.VideoPlayer
 import com.badlogic.gdx.video.VideoPlayerCreator
+import io.github.cogdanh2k3.utils.FontUtils
 
 class HelpPopup(private val stage: Stage) {
 
     // --- Skin tự thiết kế với font lớn ---
     private val skin = Skin().apply {
         // Font mặc định
-        val fontDefault = BitmapFont()
+        val fontDefault = FontUtils.loadCustomFont(24, Color.WHITE)
         add("default-font", fontDefault)
 
         // Font lớn cho title
