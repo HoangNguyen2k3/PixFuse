@@ -127,7 +127,7 @@ class ModeSelectScreen(val game: Main) : Screen {
         val battleButton = TextButton("BATTLE MODE", battleStyle).apply {
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
-                    val bossData = BossDatabase.getBossForLevel(SaveManager.gameSave.int_levelBoss)
+/*                    val bossData = BossDatabase.getBossForLevel(SaveManager.gameSave.int_levelBoss)
                     val boss = Boss(
                         name = bossData.name,
                         hp = bossData.hp,
@@ -136,7 +136,8 @@ class ModeSelectScreen(val game: Main) : Screen {
                     val mode = BattleMode(boss,bossData.turnAttackBoss)
 
                     // TODO: Thay bằng BattleMode thực tế sau
-                    game.screen = GameScreen(game, mode)
+                    game.screen = GameScreen(game, mode)*/
+                    game.screen = KingdomScreen(game)
                 }
             })
         }
