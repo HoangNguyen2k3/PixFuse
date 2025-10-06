@@ -104,7 +104,26 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
         }
     }
 }
+    fun spawnTileBegin() {
+        if (hasWon || hasLost) return
+        val empty = board.getEmptyCells()
+        if (empty.isEmpty()) return
 
+        val (r, c) = empty.random()
+
+        // an toàn: double-check ô vẫn trống (defensive)
+        val existing = board.getTile(r, c)
+        if (existing.value != 0 || existing.frozen != 0 || existing.isBoom) {
+            // shouldn't happen, log và abort
+            com.badlogic.gdx.Gdx.app.log("spawnTile", "skipping spawn: cell not empty at $r,$c")
+            return
+        }
+        val value = if (Random.nextFloat() < 0.9f) 2 else 4
+                // NORMAL
+                val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0,isThunder = false, thunderCounter = 0)
+                board.setTile(r, c, tile)
+                board.addSpawnAnim(r, c, value)
+    }
     fun update() {
         if(hasWon||hasLost) return
         if(mode.name=="Timed"){

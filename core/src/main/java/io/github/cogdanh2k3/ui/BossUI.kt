@@ -220,12 +220,17 @@ class BossUI(
             showLine(storyLines[currentLineIndex])
         }
     }
-
-    fun showStoryPopup(bossName: String, textLines: List<String>, portraitPath: String = "UI/pikachu.png") {
+    private var onStoryFinish: (() -> Unit)? = null
+    fun showStoryPopup(
+        bossName: String,
+        textLines: List<String>,
+        portraitPath: String = "UI/pikachu.png",
+        onFinish: (() -> Unit)? = null
+    ) {
         storyLines = textLines
         currentLineIndex = 0
         storyVisible = true
-
+        onStoryFinish = onFinish
         // set ảnh portrait từ boss
         storyPortrait.drawable = Image(Texture(mode.boss.texturePath)).drawable
 
@@ -256,6 +261,7 @@ class BossUI(
             Actions.run { blackOverlay.isVisible = false }
         ))
         storyVisible = false
+        onStoryFinish?.invoke()
     }
 }
 

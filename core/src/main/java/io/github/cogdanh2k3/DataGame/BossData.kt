@@ -34,11 +34,11 @@ object BossDatabase {
             hp = 150,
             texturePath = "Boss/boss_pvz.png",
             introStory = listOf(
-                "...Brains... brains...",
+                "Brains brains",
                 "Một bóng người lảo đảo bước ra khỏi vườn hoa héo úa.",
                 "Từng chiếc lá rơi, từng bông hoa khô, báo hiệu sự hồi sinh của cơn ác mộng xanh xám.",
                 "Ngươi đã hái quá nhiều hoa rồi đó, người sống.",
-                "Giờ thì... ta sẽ hái... bộ não của ngươi!"
+                "Giờ thì ta sẽ hái bộ não của ngươi!"
             ),
             midStory = listOf(
                 "Cắn... chưa đủ... thêm nữa...",
@@ -57,11 +57,11 @@ object BossDatabase {
             hp = 200,
             texturePath = "Boss/boss_dora.png",
             introStory = listOf(
-                "‘Xin chào Nobita... à không, nhầm người rồi nhỉ?’",
+                "‘Xin chào Nobita à không, nhầm người rồi nhỉ?’",
                 "Một Doraemon đen ngòm bước ra từ cánh cổng thời gian rạn nứt.",
                 "Đôi mắt cậu không còn hiền hậu — mà đỏ rực như than cháy.",
                 "Những bảo bối trong túi giờ đã bị hắc hoá: đèn pin tiêu diệt, chong chóng tử thần, cánh cửa địa ngục.",
-                "Ngươi có muốn thử xem... món bảo bối nào sẽ xoá sổ ngươi trước không?"
+                "Ngươi có muốn thử xem món bảo bối nào sẽ xoá sổ ngươi trước không?"
             ),
             midStory = listOf(
                 "Heh... túi thần kỳ vẫn còn vài món chưa dùng...",
@@ -81,9 +81,9 @@ object BossDatabase {
             texturePath = "Boss/boss_frize.png",
             introStory = listOf(
                 "‘Ta là Frieza – Hoàng đế của vũ trụ!’",
-                "Ánh sáng chói loà, hắn bay lơ lửng giữa không trung với nụ cười ngạo nghễ.",
-                "Từng hành tinh sụp đổ dưới tay ta, còn ngươi chỉ là... một con kiến đang run rẩy.",
-                "Ta đã từng tha mạng cho Kakarot... nhưng ngươi thì không có cơ hội đó đâu!",
+                "Ánh sáng chói loà, hắn bay lơ lửng giữa không trung với nụ cười ngạo nghễ",
+                "Từng hành tinh sụp đổ dưới tay ta, còn ngươi chỉ là một con kiến đang run rẩy",
+                "Ta đã từng tha mạng cho Kakarot nhưng ngươi thì không có cơ hội đó đâu!",
                 "Chuẩn bị chứng kiến sức mạnh vượt qua cả Super Saiyan đi!"
             ),
             midStory = listOf(
@@ -103,11 +103,11 @@ object BossDatabase {
             hp = 250,
             texturePath = "Boss/boss_memecat.png",
             introStory = listOf(
-                "Meow... nhưng không còn dễ thương như trước nữa.",
+                "Meow nhưng không còn dễ thương như trước nữa.",
                 "Meme Cat đã bị virus Internet hắc hoá, biến thành quái thú kỹ thuật số.",
                 "Ngươi nghe thấy không? Tiếng ‘meow’ giờ vang lên như tiếng lỗi hệ thống.",
                 "Ngươi nghĩ mình là nhân vật chính à?",
-                "Ha! Trong memeverse này, *ta* là kẻ thống trị sự vô lý!"
+                "Ha! Trong memeverse này, ta là kẻ thống trị sự vô lý!"
             ),
             midStory = listOf(
                 "Lỗi 404: Ngươi không tìm thấy chiến thắng!",

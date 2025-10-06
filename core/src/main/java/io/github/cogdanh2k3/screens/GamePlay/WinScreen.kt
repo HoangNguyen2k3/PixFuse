@@ -14,7 +14,8 @@ import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.StretchViewport  // Thêm import này (nếu chưa có)
-import io.github.cogdanh2k3.DataGame.GameSave
+import io.github.cogdanh2k3.Boss
+import io.github.cogdanh2k3.DataGame.BossDatabase
 import io.github.cogdanh2k3.DataGame.LevelData
 import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Main
@@ -29,7 +30,8 @@ class WinScreen(
     private val game: Main,
     private val score: Int,
     private val mode: GameMode,
-    private val levelData: LevelData? = null
+    private val levelData: LevelData? = null,
+    private val index_next_boss: Int? = -1
 ) : ScreenAdapter() {
 
     private val camera = OrthographicCamera()
@@ -72,11 +74,12 @@ class WinScreen(
     override fun show() {
         SaveManager.gameSave.addScore(score)
         if(mode is BattleMode){
-            if(SaveManager.gameSave.int_levelBoss<4){
+          //  if(SaveManager.gameSave.int_levelBoss<4){
                 SaveManager.gameSave.int_levelBoss++;
-            }else{
+          //  }
+/*            else{
                 SaveManager.gameSave.int_levelBoss=0;
-            }
+            }*/
         }
         SaveManager.saveGame()
         fireworkAnim = SpriteSheetAnimation("titles/firework.png", 5, 6, 0.05f)
@@ -258,6 +261,19 @@ class WinScreen(
                     }
                 }
             }
+        }
+        if(mode is BattleMode){
+            if(index_next_boss!=null){
+            val bossData = BossDatabase.getBossForLevel(index_next_boss)
+            val boss = Boss(
+                name = bossData.name,
+                hp = bossData.hp,
+                texturePath = bossData.texturePath
+            )
+            val mode = BattleMode(boss, bossData.turnAttackBoss)
+            game.screen = GameScreen(game, mode)
+                return
+        }
         }
         game.screen = MenuScreen(game)
     }

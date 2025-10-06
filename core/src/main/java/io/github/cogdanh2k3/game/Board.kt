@@ -145,6 +145,24 @@ class Board(val size: Int) {
             grid[pair.first][pair.second].value = TILE_WALL
         }
     }
+    fun spawnBoomTiles( temp: Int){
+        var temp1 : Int = temp
+        for (r in 0 until size) {
+            for (c in 0 until size) {
+                if(temp1<=0){
+                    return
+                }
+                val t = grid[r][c]
+                // Ô trống chỉ khi value == 0 và không có hiệu ứng đặc biệt
+                if (t.value == 0 && t.frozen == 0 && !t.isBoom && !t.isThunder) {
+                    temp1--
+                    grid[r][c].value = 4
+                    grid[r][c].isBoom = true
+                    grid[r][c].boomCounter = 3
+                }
+            }
+        }
+    }
     //-------------------BOOSTER-----------------------
     fun hasWall(): Boolean {
         for (r in 0 until size) {

@@ -9,12 +9,13 @@ import com.badlogic.gdx.scenes.scene2d.ui.Image
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.utils.Align
 import io.github.cogdanh2k3.Boss
+import io.github.cogdanh2k3.DataGame.BossDatabase
 import io.github.cogdanh2k3.DataGame.DataGame
 import io.github.cogdanh2k3.audio.SoundId
 import io.github.cogdanh2k3.audio.SoundManager
 import io.github.cogdanh2k3.game.Board
 import io.github.cogdanh2k3.ui.BossUI
-import io.github.cogdanh2k3.utils.FontUtils
+import kotlin.random.Random
 
 interface GameMode {
     val name: String
@@ -203,13 +204,15 @@ class TimedMode(
 
 class BattleMode(
     val boss: Boss,
-    val maxMoves: Int = 50
+    val maxMoves: Int = 50,
+    val index_current_boss: Int = 0
 ) : GameMode
 {
 
     override val name: String = "Battle"
     override val data: DataGame = DataGame()
-
+    var midStoryShown: Boolean = false
+    var endStoryShown: Boolean = false
     var remainingMoves = maxMoves
         private set
 
@@ -228,6 +231,8 @@ class BattleMode(
         remainingMoves = maxMoves
         boss.currentHP = boss.hp
         pendingAttacks.clear()
+        midStoryShown =false
+        endStoryShown = false
     }
 
     fun onMoveUsed() {
@@ -257,6 +262,20 @@ class BattleMode(
         for (attack in pendingAttacks) {
             addDamageEffect(board, stage, attack.fromX, attack.fromY, bossX, bossY, attack.damage)
             boss.takeDamage(attack.damage)
+            val bossData = BossDatabase.getBossForLevel(index_current_boss)
+            if (boss.currentHP < boss.hp / 2 && !midStoryShown) {
+                midStoryShown = true
+                bossUI!!.showStoryPopup(boss.name, bossData.midStory, boss.texturePath) {
+                    triggerBossReaction(board, stage, type = "end")
+                }
+            }
+            if (boss.currentHP < boss.hp / 6 && !endStoryShown) {
+                endStoryShown = true
+               // bossUI!!.showStoryPopup(boss.name, bossData.defeatStory, boss.texturePath)
+                bossUI?.showStoryPopup(boss.name, bossData.defeatStory, boss.texturePath) {
+                    triggerBossReaction(board, stage, type = "end")
+                }
+            }
         }
 
         if (pendingAttacks.isNotEmpty()) {
@@ -322,8 +341,62 @@ class BattleMode(
             )
         )
     }
+    // ✅ Phản ứng của boss sau hội thoại
+    private fun triggerBossReaction(board: Board, stage: Stage, type: String) {
+        val random = Random.nextFloat()
+        when {
+            random < 0.5f -> { // 50% hồi máu
+                val healPercent = if (type == "mid") 0.2f else 0.4f
+                val healAmount = (boss.hp * healPercent).toInt()
+                boss.currentHP = (boss.currentHP + healAmount).coerceAtMost(boss.hp)
+                showFloatingText(stage, "+${healAmount} HP", Color.GREEN)
+                println("💚 Boss hồi $healAmount HP!")
+            }
+            else -> { // 50% spawn bom
+                val emptyCells = board.getEmptyCells()
+                if (emptyCells.isNotEmpty()) {
+                    val spawnCount = (emptyCells.size / 2).coerceAtMost(6)
+                    board.spawnBoomTiles(spawnCount)
+                    showFloatingText(stage, "💣 Boss summoned $spawnCount bombs!", Color.ORANGE)
+                    println("💣 Boss triệu hồi $spawnCount boom tiles!")
+                }
+            }
+        }
+    }
 
+    fun showFloatingText(
+        stage: Stage,
+        text: String,
+        color: Color = Color.WHITE,
+        x: Float = stage.width / 2f,
+        y: Float = stage.height / 2f,
+        fontScale: Float = 1.4f,
+        moveUp: Float = 150f,
+        duration: Float = 1.2f
+    ) {
+        // ✅ Tạo font cơ bản (có thể thay bằng font chung của game)
+        val font = BitmapFont()
+        val labelStyle = Label.LabelStyle(font, color)
 
+        val label = Label(text, labelStyle).apply {
+            setFontScale(fontScale)
+            setPosition(x - width / 2f, y) // canh giữa
+        }
+
+        stage.addActor(label)
+        label.toFront()
+
+        // 🎬 Hiệu ứng bay lên & mờ dần
+        label.addAction(
+            Actions.sequence(
+                Actions.parallel(
+                    Actions.moveBy(0f, moveUp, duration, com.badlogic.gdx.math.Interpolation.sineOut),
+                    Actions.fadeOut(duration)
+                ),
+                Actions.run { label.remove() }
+            )
+        )
+    }
 
     fun onBossDefeated() {
         println("🎉 Boss ${boss.name} đã bị đánh bại!")

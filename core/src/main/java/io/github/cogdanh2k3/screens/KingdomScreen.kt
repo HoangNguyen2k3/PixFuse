@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Screen
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Image
 import com.badlogic.gdx.scenes.scene2d.ui.Label
@@ -21,78 +22,131 @@ import io.github.cogdanh2k3.Mode.BattleMode
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 import io.github.cogdanh2k3.utils.FontUtils
 
-class KingdomScreen(val game: Main) : Screen {
+class KingdomScreen(private val game: Main) : Screen {
 
     private val stage = Stage(FitViewport(1080f, 1920f))
-    val currentUnlockedIndex = SaveManager.gameSave.int_levelBoss
+    private val shapeRenderer = ShapeRenderer()
+    private val currentUnlockedIndex = SaveManager.gameSave.int_levelBoss
+
+    // lưu danh sách vị trí tâm các đảo để nối line
+    private val islandCenters = mutableListOf<Pair<Float, Float>>()
+
     override fun show() {
         Gdx.input.inputProcessor = stage
+
+        // --- Background ---
         val bg = Image(Texture("BG/background.png"))
         bg.setFillParent(true)
         stage.addActor(bg)
 
+        // --- Load danh sách Kingdom ---
         val kingdoms = KingdomDatabase.kingdoms
+        val startY = stage.height - 400f
+        val spacingY = 400f
+        val islandSize = Pair(500f, 500f)
+        val offsetXAmount = 180f
 
-        var offsetX = -200f
         kingdoms.forEachIndexed { index, kingdom ->
             val island = Image(Texture(kingdom.islandImage))
-            island.setSize(400f, 220f)
-            island.setPosition(stage.width / 2f + offsetX, stage.height - 400f - index * 300f)
+            island.setSize(islandSize.first, islandSize.second)
 
-            val bossImg = Image(Texture(kingdom.bossImage))
-            bossImg.setSize(120f, 120f)
-            bossImg.setPosition(island.x + 140f, island.y + 90f)
+            // Lệch trái/phải xen kẽ
+            val offsetX = if (index % 2 == 0) -offsetXAmount else offsetXAmount
+            val posX = stage.width / 2f - island.width / 2f + offsetX
+            val posY = startY - index * spacingY
+            island.setPosition(posX, posY)
 
+            // Lưu lại tâm để vẽ line sau
+            val centerX = posX + island.width / 2f
+            val centerY = posY + island.height / 2f
+            islandCenters.add(centerX to centerY)
+
+            // --- Tên đảo ---
             val nameLabel = Label(
                 kingdom.name,
-                Label.LabelStyle(FontUtils.loadCustomFont(22), Color.WHITE)
+                Label.LabelStyle(FontUtils.loadCustomFont(28), Color.WHITE)
             )
-            nameLabel.setPosition(island.x + 100f, island.y - 20f)
             nameLabel.setAlignment(Align.center)
+            nameLabel.setSize(island.width, 40f)
+            nameLabel.setPosition(posX, island.y - 50f)
 
             if (index > currentUnlockedIndex) {
-                // đảo bị khóa
+                // Đảo bị khóa
                 island.color = Color(0.3f, 0.3f, 0.3f, 0.8f)
-                bossImg.color = Color(0.3f, 0.3f, 0.3f, 0.8f)
                 val lock = Image(Texture("UI/lock_icon.png"))
-                lock.setSize(80f, 80f)
-                lock.setPosition(island.x + 160f, island.y + 80f)
+                lock.setSize(100f, 100f)
+                lock.setPosition(
+                    island.x + island.width / 2f - lock.width / 2f,
+                    island.y + island.height / 2f - lock.height / 2f
+                )
+                stage.addActor(island)
                 stage.addActor(lock)
             } else {
-                // đảo mở khóa → cho phép click
-                island.addAction(Actions.forever(Actions.sequence(
-                    Actions.scaleTo(1.05f, 1.05f, 1f),
-                    Actions.scaleTo(1f, 1f, 1f)
-                )))
+                // Đảo mở khóa → hiệu ứng và cho phép click
+                island.setOrigin(Align.center)
+                island.addAction(
+                    Actions.forever(
+                        Actions.sequence(
+                            Actions.scaleTo(1.08f, 1.08f, 0.8f),
+                            Actions.scaleTo(1f, 1f, 0.8f)
+                        )
+                    )
+                )
 
                 island.addListener(object : ClickListener() {
                     override fun clicked(event: InputEvent?, x: Float, y: Float) {
-                        val bossData = BossDatabase.getBossForLevel(SaveManager.gameSave.int_levelBoss)
+                        val bossData = BossDatabase.getBossForLevel(index)
                         val boss = Boss(
                             name = bossData.name,
                             hp = bossData.hp,
                             texturePath = bossData.texturePath
                         )
-                        val mode = BattleMode(boss,bossData.turnAttackBoss)
-
-                        // TODO: Thay bằng BattleMode thực tế sau
-                        game.screen = GameScreen(game, mode)
+                        val mode = BattleMode(boss, bossData.turnAttackBoss,index)
+                        game.screen = GameScreen(game, mode,null,index+1)
                     }
                 })
+                stage.addActor(island)
             }
 
-            stage.addActor(island)
-            stage.addActor(bossImg)
             stage.addActor(nameLabel)
-
-            offsetX *= -1f
         }
-
     }
 
     override fun render(delta: Float) {
+        // --- Update stage ---
         stage.act(delta)
+
+        // --- Vẽ đường nối bằng ShapeRenderer ---
+        stage.viewport.apply()
+        shapeRenderer.projectionMatrix = stage.camera.combined
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+
+        shapeRenderer.color = Color(1f, 1f, 1f, 0.4f)
+        for (i in 0 until islandCenters.size - 1) {
+            val (x1, y1) = islandCenters[i]
+            val (x2, y2) = islandCenters[i + 1]
+
+            // Vẽ line hơi dày (2px)
+            drawThickLine(x1, y1 - 80f, x2, y2 + 80f, 20f, Color(1f, 1f, 1f, 1f))
+        }
+
+        shapeRenderer.end()
+
+        // --- Vẽ Stage ---
         stage.draw()
+    }
+
+    private fun drawThickLine(x1: Float, y1: Float, x2: Float, y2: Float, thickness: Float, color: Color) {
+        shapeRenderer.color = color
+        val dx = x2 - x1
+        val dy = y2 - y1
+        val length = kotlin.math.sqrt(dx * dx + dy * dy)
+        val angle = kotlin.math.atan2(dy, dx)
+
+        shapeRenderer.identity()
+        shapeRenderer.translate(x1, y1, 0f)
+        shapeRenderer.rotate(0f, 0f, 1f, Math.toDegrees(angle.toDouble()).toFloat())
+        shapeRenderer.rect(0f, -thickness / 2, length, thickness)
     }
 
     override fun resize(width: Int, height: Int) {
@@ -102,7 +156,9 @@ class KingdomScreen(val game: Main) : Screen {
     override fun hide() {}
     override fun pause() {}
     override fun resume() {}
+
     override fun dispose() {
         stage.dispose()
+        shapeRenderer.dispose()
     }
 }

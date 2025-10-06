@@ -8,7 +8,6 @@ import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.utils.Align
-import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
@@ -19,7 +18,6 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport
 import io.github.cogdanh2k3.DataGame.LevelData
 import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.Mode.GameMode
-import io.github.cogdanh2k3.Mode.TargetMode
 import io.github.cogdanh2k3.Mode.TimedMode
 import io.github.cogdanh2k3.game.Board
 import io.github.cogdanh2k3.game.GameManager
@@ -41,7 +39,7 @@ import io.github.cogdanh2k3.ui.BoosterMessage
 import io.github.cogdanh2k3.ui.BossUI
 import io.github.cogdanh2k3.ui.HelpPopup
 
-class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? = null) : ScreenAdapter() {
+class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? = null,val indexBossNext: Int? = 0) : ScreenAdapter() {
     public var BOARD_SIZE = if(levelData==null){4}else{levelData.sizeBoard}
     private val camera = OrthographicCamera()
     // Sử dụng ExtendViewport để tự động scale theo tỷ lệ màn hình
@@ -111,8 +109,8 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
     private var bool_normalscreen: Boolean = true
     init {
         manager.InitData()
-        manager.spawnTile()
-        manager.spawnTile()
+        manager.spawnTileBegin()
+        manager.spawnTileBegin()
         manager.stage=stage
         val gestureDetector = GestureDetector(InputHandler(manager, this))
         Gdx.input.inputProcessor = gestureDetector
@@ -139,7 +137,9 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
                 hp = bossData.hp,
                 texturePath = bossData.texturePath
             )
-            manager.bossUI.showStoryPopup(boss.name, bossData.introStory, boss.texturePath)
+            manager.bossUI.showStoryPopup(boss.name, bossData.introStory, boss.texturePath) {
+                //triggerBossReaction(board, stage, type = "end")
+            }
         }
         // Drawable
         val booster1Drawable = TextureRegionDrawable(booster1Tex)
@@ -289,7 +289,7 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
                 endTime += Gdx.graphics.deltaTime
                 if (endTime >= 3f) {
                     if (manager.hasWon) {
-                        game.screen = WinScreen(game, score,mode,levelData)
+                        game.screen = WinScreen(game, score,mode,levelData, indexBossNext)
                     } else {
                         game.screen = LoseScreen(game, score,mode)
                     }
