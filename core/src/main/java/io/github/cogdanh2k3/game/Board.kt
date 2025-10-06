@@ -11,6 +11,8 @@ import io.github.cogdanh2k3.utils.SpriteSheetAnimation
 import kotlin.math.sin
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import io.github.cogdanh2k3.DataGame.IntPair
+import io.github.cogdanh2k3.audio.SoundId
+import io.github.cogdanh2k3.audio.SoundManager
 import io.github.cogdanh2k3.utils.FontUtils
 
 class Board(val size: Int) {
@@ -503,7 +505,7 @@ fun setTile(r: Int, c: Int, tile: Tile) {
                         tile.frozen = 0
                     }
                     // Hiệu ứng nổ khi dọn tile
-
+                    SoundManager.playSfx(SoundId.CLEARDEBUFF)
                     count++
                 }
             }

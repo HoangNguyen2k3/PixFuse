@@ -222,6 +222,7 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
                     board.setTile(r, c, t.copy(frozen = newFrozen))
                     if (newFrozen == 0) {
                         SoundManager.playVibration(200)
+                        SoundManager.playSfx(SoundId.ICECRACK)
                         board.addExplosionIceThaw(r, c)
                     }
                 }
@@ -256,7 +257,7 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
         val thunderTile = board.getTile(r, c)
         board.addExplosionThunder(r, c)
         SoundManager.playVibration(250)
-
+        SoundManager.playSfx(SoundId.THUNDER)
         val toDouble = mutableSetOf<Pair<Int, Int>>() // lưu tất cả ô sẽ nhân đôi
 
         // --- Hàng ---
@@ -317,7 +318,7 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
 
         board.addExplosionBoom(r, c)
         SoundManager.playVibration(300)
-//        SoundManager.playSfx(SoundId.EXPLODE)
+        SoundManager.playSfx(SoundId.BOMB)
     }
 
     private fun processLine(
