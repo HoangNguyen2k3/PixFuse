@@ -203,7 +203,7 @@ class TimedMode(
 
 class BattleMode(
     val boss: Boss,
-    val maxMoves: Int = 25
+    val maxMoves: Int = 50
 ) : GameMode
 {
 

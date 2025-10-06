@@ -11,7 +11,8 @@ data class GameSave(
     var list_high_score: MutableList<Int> = mutableListOf(),
     var bool_music: Boolean = true,
     var bool_sound: Boolean = true,
-    var bool_vibration: Boolean = true
+    var bool_vibration: Boolean = true,
+    var int_levelBoss : Int = 0
 ) {
     fun addScore(score: Int) {
         if (!list_high_score.contains(score)) {

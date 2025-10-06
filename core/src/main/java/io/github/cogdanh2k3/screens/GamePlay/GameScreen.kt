@@ -33,6 +33,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.ImageButton
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
+import io.github.cogdanh2k3.Boss
+import io.github.cogdanh2k3.DataGame.BossDatabase
+import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Mode.BattleMode
 import io.github.cogdanh2k3.ui.BoosterMessage
 import io.github.cogdanh2k3.ui.BossUI
@@ -130,14 +133,13 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
 
             // Thêm UI boss
              manager.bossUI = BossUI(stage, mode)
-            manager.bossUI.showStoryPopup(
-                bossName = "Long Thần Hỏa Diệm",
-                textLines = listOf(
-                    "Kẻ phàm trần... ngươi dám bước vào hang ổ của ta ư?",
-                    "Ngọn lửa này sẽ thiêu rụi linh hồn yếu ớt của ngươi!",
-                    "Chuẩn bị cho trận chiến sinh tử đi!"
-                )
+            val bossData = BossDatabase.getBossForLevel(SaveManager.gameSave.int_levelBoss)
+            val boss = Boss(
+                name = bossData.name,
+                hp = bossData.hp,
+                texturePath = bossData.texturePath
             )
+            manager.bossUI.showStoryPopup(boss.name, bossData.introStory, boss.texturePath)
         }
         // Drawable
         val booster1Drawable = TextureRegionDrawable(booster1Tex)
