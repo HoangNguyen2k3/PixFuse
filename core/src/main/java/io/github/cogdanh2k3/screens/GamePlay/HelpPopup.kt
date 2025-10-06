@@ -74,10 +74,14 @@ class HelpPopup(private val stage: Stage) {
     private var videoImage: Image? = null
 
     private val features = listOf(
-        Triple("Trap Bomb", "Gây nổ và phá hủy các ô xung quanh.", "video/videote.mp4"),
-        Triple("Wall", "Tường cản đường, có thể xóa bằng booster.", "video/videote.mp4"),
-        Triple("Booster x2", "Gấp đôi điểm khi ghép thành công.", "video/videote.mp4"),
-        Triple("Booster Extra", "Một tính năng khác để thử nghiệm.", "video/videote.mp4")
+        Triple("Bomb", "Gây nổ và phá hủy các ô xung quanh.", "video/Bomb.mp4"),
+        Triple("Wall", "Tường cản đường, có thể xóa bằng booster.", "video/Wall.mp4"),
+        Triple("Ice", "Làm đóng băng một ô được spawn.", "video/Ice.mp4"),
+        Triple("X2", "Gấp đôi giá trị khi ghép thành công.", "video/X2.mp4"),
+        Triple("Remove Row", "Xóa một hàng bất kỳ.", "video/RemoveRow.mp4"),
+        Triple("Remove Wall", "Xóa một tường bất kỳ.", "video/RemoveWall.mp4"),
+        Triple("Clear Debuff", "Xóa tất cả hiệu ứng bất lợi.", "video/ClearDebuff.mp4"),
+        Triple("Thunder", "Gấp đôi giá trị hàng và cột tại đểm được merge.", "video/Thunder.mp4")
     )
 
     fun showMainMenu() {
