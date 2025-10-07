@@ -18,6 +18,7 @@ class DataGame {
         512 to Texture("titles/Pokemon/pidgey_512.png"),
         1024 to Texture("titles/Pokemon/abra_1024.png"),
         2048 to Texture("titles/Pokemon/venonat_2048.png"),
+        -3 to Texture("titles/tile_virus.png")
     )
     private val img_plantTheme = mapOf(
         2 to Texture("titles/Plant/Plant_2.png"),
@@ -79,6 +80,7 @@ class DataGame {
         Theme("MemeCat",img_memeCatTheme),
         Theme("DragonBall",img_DragonBallTheme),
     )
+    val tile_virus = Texture("titles/tile_virus.png")
 }
 class DataTargetLevel{
     private val targetlevel = mapOf(

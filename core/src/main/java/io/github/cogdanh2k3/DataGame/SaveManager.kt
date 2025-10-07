@@ -27,7 +27,7 @@ object SaveManager {
         if (file.exists()) {
             try {
                 val raw = file.readString()
-                Gdx.app.log("SaveManager", "📄 Nội dung JSON:\n$raw")
+          //      Gdx.app.log("SaveManager", "📄 Nội dung JSON:\n$raw")
 
                 val loaded = json.fromJson(GameSave::class.java, raw)
 
@@ -39,7 +39,7 @@ object SaveManager {
 
                 // ✅ Chuyển các world.levels thành mutable list (tránh lỗi sau)
 
-                Gdx.app.log("SaveManager", "✅ Load thành công: HighScore = ${gameSave.list_high_score}")
+        //        Gdx.app.log("SaveManager", "✅ Load thành công: HighScore = ${gameSave.list_high_score}")
                 return gameSave
 
             } catch (e: Exception) {
@@ -62,7 +62,7 @@ object SaveManager {
             val file = Gdx.files.local(SAVE_FILE)
             val jsonText = json.prettyPrint(gameSave)
             file.writeString(jsonText, false)
-            Gdx.app.log("SaveManager", "💾 Đã lưu game thành công. (${file.file().absolutePath})")
+  //          Gdx.app.log("SaveManager", "💾 Đã lưu game thành công. (${file.file().absolutePath})")
         } catch (e: Exception) {
             Gdx.app.error("SaveManager", "❌ Lỗi khi lưu game", e)
         }
@@ -103,7 +103,11 @@ object SaveManager {
             bool_music = true,
             bool_sound = true,
             bool_vibration = true,
-            int_levelBoss = 1
+            int_levelBoss = 1,
+            numbooster1 = 10,
+            numbooster2 = 10,
+            numbooster3 = 10,
+            numbooster4 = 10
         )
 
         Gdx.app.log("SaveManager", "✅ GameSave mặc định đã được tạo.")

@@ -12,7 +12,11 @@ data class GameSave(
     var bool_music: Boolean = true,
     var bool_sound: Boolean = true,
     var bool_vibration: Boolean = true,
-    var int_levelBoss : Int = 0
+    var int_levelBoss : Int = 0,
+    var numbooster1:Int = 0,
+    var numbooster2:Int = 0,
+    var numbooster3:Int = 0,
+    var numbooster4:Int = 0
 ) {
     fun addScore(score: Int) {
         if (!list_high_score.contains(score)) {

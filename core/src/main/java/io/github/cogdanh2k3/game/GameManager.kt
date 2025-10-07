@@ -14,6 +14,7 @@ import io.github.cogdanh2k3.ui.BossUI
 import kotlin.random.Random
 const val TILE_WALL = -1
 const val TILE_FROZEN = -2
+const val TILE_VIRUS = -3
 class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData? = null) {
     var score = 0
         private set
@@ -283,10 +284,10 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
         for (i in 0 until board.size) {
             if (i == c) continue // bỏ trung tâm (xử lý riêng)
             val tile = board.getTile(r, i)
-            if (tile.value > 0 && tile.value != TILE_WALL) {
+            if (tile.value > 0 && tile.value != TILE_WALL&&tile.value != TILE_VIRUS) {
                 toDouble.add(r to i)
             }
-            if(tile.value!=TILE_WALL){
+            if(tile.value!=TILE_WALL&&tile.value != TILE_VIRUS){
                 board.addExplosionThunder(r, i)
             }
         }
@@ -383,7 +384,7 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
                 if (i < compact.lastIndex) {
                     val (nextTile, nextPos) = compact[i + 1]
 
-                    if (nextTile.frozen == 0 && tile.value == nextTile.value) {
+                    if (nextTile.frozen == 0 && tile.value == nextTile.value&& tile.value != TILE_VIRUS) {
                         // merge hợp lệ
                         var mergedValue = tile.value * 2
                         if (doubleNextMerge == true) {
@@ -449,6 +450,7 @@ if(mode is BattleMode){
                     if (action.isThunderMerged) {
                         triggerThunderBuff(index, toC)
                     }
+                    checkVirusTile()
                 }
             } else {
                 val fromR = if (reversed) board.size - 1 - action.from else action.from
@@ -467,6 +469,7 @@ if(mode is BattleMode){
                     if (action.isThunderMerged) {
                         triggerThunderBuff(toR, index)
                     }
+                    checkVirusTile()
                 }
             }
         }
@@ -491,7 +494,22 @@ if(mode is BattleMode){
             }
         }
     }
-
+    fun checkVirusTile(){
+        if(!board.hasVirus()){
+            return
+        }
+        val rate = Random.nextFloat()
+        if(rate<0.7f)
+            return
+        val p = Random.nextFloat()
+        if(p<0.5f){
+            val (r, c) = board.getEmptyCells().randomOrNull() ?: return
+            board.setTile(r, c, Tile(-3))
+            board.addSpawnAnim(r, c, -3)
+        }else{
+            board.MakeVirus()
+        }
+    }
 
 
 

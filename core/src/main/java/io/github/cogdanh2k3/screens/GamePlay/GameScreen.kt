@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.utils.Align
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
@@ -14,6 +15,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.math.Interpolation
 import com.badlogic.gdx.math.Vector3
+import com.badlogic.gdx.scenes.scene2d.Group
 import com.badlogic.gdx.utils.viewport.ExtendViewport
 import io.github.cogdanh2k3.DataGame.LevelData
 import io.github.cogdanh2k3.Main
@@ -38,8 +40,9 @@ import io.github.cogdanh2k3.Mode.BattleMode
 import io.github.cogdanh2k3.ui.BoosterMessage
 import io.github.cogdanh2k3.ui.BossUI
 import io.github.cogdanh2k3.ui.HelpPopup
+import com.badlogic.gdx.scenes.scene2d.ui.Label
 
-class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? = null,val indexBossNext: Int? = 0) : ScreenAdapter() {
+class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? = null,val indexBossNext: Int? = 1) : ScreenAdapter() {
     public var BOARD_SIZE = if(levelData==null){4}else{levelData.sizeBoard}
     private val camera = OrthographicCamera()
     // Sử dụng ExtendViewport để tự động scale theo tỷ lệ màn hình
@@ -123,88 +126,139 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
     }
     override fun show() {
         mode.init()
-        // Chuyển input sang stage để bấm booster được
-        Gdx.input.inputProcessor = stage
-        if (mode is BattleMode) {
-            // Ẩn các label điểm
-            bool_normalscreen = false
 
-            // Thêm UI boss
-             manager.bossUI = BossUI(stage, mode)
-            val bossData = BossDatabase.getBossForLevel(SaveManager.gameSave.int_levelBoss)
+        // Chuyển input sang stage để bấm booster được
+        val gestureDetector = GestureDetector(InputHandler(manager, this))
+        val multiplexer = InputMultiplexer(stage, gestureDetector)
+        Gdx.input.inputProcessor = multiplexer
+        // Nếu là BattleMode thì tạo Boss UI
+        if (mode is BattleMode) {
+            bool_normalscreen = false
+            manager.bossUI = BossUI(stage, mode)
+var temp:Int = 0
+            if(indexBossNext!=null){
+    temp = indexBossNext-1
+}
+            val bossData = BossDatabase.getBossForLevel(temp)
             val boss = Boss(
                 name = bossData.name,
                 hp = bossData.hp,
                 texturePath = bossData.texturePath
             )
             manager.bossUI.showStoryPopup(boss.name, bossData.introStory, boss.texturePath) {
-                //triggerBossReaction(board, stage, type = "end")
+                // triggerBossReaction(...)
             }
         }
-        // Drawable
-        val booster1Drawable = TextureRegionDrawable(booster1Tex)
-        val booster2Drawable = TextureRegionDrawable(booster2Tex)
-        val booster3Drawable = TextureRegionDrawable(booster3Tex)
-        val booster4Drawable = TextureRegionDrawable(booster4Tex)
 
-        booster1Btn = ImageButton(booster1Drawable)
-        booster2Btn = ImageButton(booster2Drawable)
-        booster3Btn = ImageButton(booster3Drawable)
-        booster4Btn = ImageButton(booster4Drawable)
+        // ==== Tạo booster buttons ====
+        val boosterDrawables = listOf(
+            TextureRegionDrawable(booster1Tex),
+            TextureRegionDrawable(booster2Tex),
+            TextureRegionDrawable(booster3Tex),
+            TextureRegionDrawable(booster4Tex)
+        )
 
+        val boosterButtons = boosterDrawables.map { ImageButton(it) }
         val radius = getResponsiveValue(40f)
         val size = radius * 2
-
-        booster1Btn.setSize(size, size)
-        booster2Btn.setSize(size, size)
-        booster3Btn.setSize(size, size)
-        booster4Btn.setSize(size, size)
-        // Multiplexer: Stage + GestureDetector
-        // Multiplexer
-        val gestureDetector = GestureDetector(InputHandler(manager, this))
-        val multiplexer = InputMultiplexer(stage, gestureDetector)
-        Gdx.input.inputProcessor = multiplexer
+        boosterButtons.forEach { it.setSize(size, size) }
 
         // ==== Table chứa 4 booster nằm ngang ====
         val boosterTable = Table()
-        boosterTable.bottom()
-        boosterTable.center()
-        boosterTable.defaults().pad(getResponsiveValue(10f)) // padding cho tất cả cell
+        boosterTable.bottom().center()
+        boosterTable.defaults().pad(getResponsiveValue(10f))
 
-// Thêm 4 nút
-        boosterTable.add(booster1Btn).size(size)
-        boosterTable.add(booster2Btn).size(size)
-        boosterTable.add(booster3Btn).size(size)
-        boosterTable.add(booster4Btn).size(size)
-
-// Không cần tự tính setPosition theo width, chỉ canh bottom và center
-        boosterTable.setFillParent(false)
-        boosterTable.setPosition(
-            viewport.worldWidth / 2f,
-            getResponsiveValue(80f),   // đẩy lên 80 thay vì 20
-            Align.center
+        // ==== Hiển thị số lượng booster ====
+        val boosterCounts = listOf(
+            SaveManager.gameSave.numbooster1,
+            SaveManager.gameSave.numbooster2,
+            SaveManager.gameSave.numbooster3,
+            SaveManager.gameSave.numbooster4
         )
+
+        val boosterLabels = mutableListOf<Label>()
+
+        // ==== Gộp nút + label trong Group ====
+        for (i in boosterButtons.indices) {
+            val btn = boosterButtons[i]
+            val group = Group()
+            group.setSize(size, size)
+            group.addActor(btn)
+
+            // Font đẹp hơn
+            val font = FontUtils.loadCustomFont(18, Color.WHITE)
+            val labelStyle = Label.LabelStyle(font, Color.WHITE)
+            val label = Label("x${boosterCounts[i]}", labelStyle)
+
+            label.setFontScale(getScaleFactor() * 1.8f)
+            label.setAlignment(Align.center)
+            label.color = Color.GOLD
+
+            // Đặt label ở góc phải dưới của nút
+            label.setPosition(size - getResponsiveValue(35f), getResponsiveValue(5f))
+            group.addActor(label)
+            boosterLabels.add(label)
+
+            boosterTable.add(group).size(size)
+        }
+
+        boosterTable.setPosition(viewport.worldWidth / 2f, getResponsiveValue(80f), Align.center)
         stage.addActor(boosterTable)
-        boosterMessage = BoosterMessage(stage, boosterTable.y, viewport.worldWidth)
-        // Click events
-        booster1Btn.addListener(object : ClickListener() {
-            override fun clicked(event: com.badlogic.gdx.scenes.scene2d.InputEvent?, x: Float, y: Float) {
+        boosterMessage = BoosterMessage(
+            stage,
+            boosterTable.y,             // hoặc getResponsiveValue(80f) nếu bạn muốn cố định theo UI
+            viewport.worldWidth
+        )
+        // ===== Hàm cập nhật số lượng booster =====
+        fun updateBoosterLabel(index: Int) {
+            val count = when (index) {
+                0 -> SaveManager.gameSave.numbooster1
+                1 -> SaveManager.gameSave.numbooster2
+                2 -> SaveManager.gameSave.numbooster3
+                else -> SaveManager.gameSave.numbooster4
+            }
+            boosterLabels[index].setText("x$count")
+            SaveManager.saveGame()
+        }
+
+        // ========== BOOSTER 1 ==========
+        boosterButtons[0].addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                if (SaveManager.gameSave.numbooster1 <= 0) {
+                    boosterMessage.show("Booster đã hết!")
+                    return
+                }
+                SaveManager.gameSave.numbooster1--
+                updateBoosterLabel(0)
                 boosterMessage.show("Booster x2 Activated!")
                 manager.doubleNextMerge = true
-                // TODO: doubleNextMerge = true
             }
         })
 
-        booster2Btn.addListener(object : ClickListener() {
-            override fun clicked(event: com.badlogic.gdx.scenes.scene2d.InputEvent?, x: Float, y: Float) {
+        // ========== BOOSTER 2 ==========
+        boosterButtons[1].addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                if (SaveManager.gameSave.numbooster2 <= 0) {
+                    boosterMessage.show("Booster đã hết!")
+                    return
+                }
+                SaveManager.gameSave.numbooster2--
+                updateBoosterLabel(1)
                 boosterMessage.show("Chọn một ô để xóa cả hàng")
                 manager.activeBombRowBooster = true
             }
         })
 
-        booster3Btn.addListener(object : ClickListener() {
-            override fun clicked(event: com.badlogic.gdx.scenes.scene2d.InputEvent?, x: Float, y: Float) {
+        // ========== BOOSTER 3 ==========
+        boosterButtons[2].addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                if (SaveManager.gameSave.numbooster3 <= 0) {
+                    boosterMessage.show("Booster đã hết!")
+                    return
+                }
                 if (manager.board.hasWall()) {
+                    SaveManager.gameSave.numbooster3--
+                    updateBoosterLabel(2)
                     boosterMessage.show("Chọn một WALL để xóa")
                     manager.activeWallBooster = true
                 } else {
@@ -212,35 +266,40 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
                 }
             }
         })
-        // ==== Booster 4: Xóa toàn bộ hiệu ứng bất lợi ====
-        booster4Btn.addListener(object : ClickListener() {
+
+        // ========== BOOSTER 4 ==========
+        boosterButtons[3].addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
-                val removedCount = manager.board.clearAllDebuffs() // 🔥 gọi hàm mới trong Board
-                if (removedCount > 0)
+                if (SaveManager.gameSave.numbooster4 <= 0) {
+                    boosterMessage.show("Booster đã hết!")
+                    return
+                }
+                val removedCount = manager.board.clearAllDebuffs()
+                if (removedCount > 0) {
+                    SaveManager.gameSave.numbooster4--
+                    updateBoosterLabel(3)
                     boosterMessage.show("Đã loại bỏ toàn bộ hiệu ứng bất lợi!")
-                else
+                } else {
                     boosterMessage.show("Không có hiệu ứng bất lợi nào!")
+                }
             }
         })
+
         // ========== HELP BUTTON ==========
         val helpTex = Texture("UI/helpicon.png")
         val helpDrawable = TextureRegionDrawable(helpTex)
         helpButton = ImageButton(helpDrawable)
         helpButton.setSize(getResponsiveValue(60f), getResponsiveValue(60f))
         helpButton.setPosition(getResponsiveValue(20f), viewport.worldHeight - getResponsiveValue(80f))
-
         stage.addActor(helpButton)
 
-// Popup
         helpPopup = HelpPopup(stage)
-
         helpButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 helpPopup.showMainMenu()
             }
         })
     }
-
 
     private fun getScaleFactor(): Float {
         // Scale factor dựa trên kích thước màn hình
@@ -291,7 +350,12 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
                     if (manager.hasWon) {
                         game.screen = WinScreen(game, score,mode,levelData, indexBossNext)
                     } else {
-                        game.screen = LoseScreen(game, score,mode)
+                        var temp: Int = 0
+                        if(indexBossNext!=null)
+                        {
+                            temp= indexBossNext-1
+                        }
+                        game.screen = LoseScreen(game, score,mode,temp)
                     }
                 }
             }

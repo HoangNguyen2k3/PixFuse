@@ -21,7 +21,8 @@ import io.github.cogdanh2k3.screens.MenuScreen
 class LoseScreen(
     private val game: Main,
     private val score: Int,
-    private val mode: GameMode
+    private val mode: GameMode,
+    private val indexBoss: Int = 1
 ) : ScreenAdapter() {
 
     private val camera = OrthographicCamera()
@@ -143,7 +144,7 @@ class LoseScreen(
             val touch = Vector3(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
             viewport.unproject(touch)
             when {
-                retryBtn.contains(touch.x, touch.y) -> game.screen = GameScreen(game, mode)
+                retryBtn.contains(touch.x, touch.y) -> game.screen = GameScreen(game, mode,null,indexBoss)
                 homeBtn.contains(touch.x, touch.y) -> game.screen = MenuScreen(game)
             }
         }

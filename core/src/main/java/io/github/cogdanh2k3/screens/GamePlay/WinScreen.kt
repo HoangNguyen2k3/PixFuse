@@ -264,7 +264,12 @@ class WinScreen(
         }
         if(mode is BattleMode){
             if(index_next_boss!=null){
-            val bossData = BossDatabase.getBossForLevel(index_next_boss)
+                var temp_index = index_next_boss
+
+                if(index_next_boss==-1){
+                    temp_index = SaveManager.gameSave.int_levelBoss
+            }
+                val bossData = BossDatabase.getBossForLevel(temp_index)
             val boss = Boss(
                 name = bossData.name,
                 hp = bossData.hp,

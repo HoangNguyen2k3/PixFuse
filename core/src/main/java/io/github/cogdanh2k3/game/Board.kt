@@ -30,6 +30,7 @@ class Board(val size: Int) {
         1024 to Texture("titles/Pokemon/abra_1024.png"),
         2048 to Texture("titles/Pokemon/venonat_2048.png"),
     )
+    private val virusTexture = Texture("titles/tile_virus.png")
     val txt_font= FontUtils.loadCustomFont(30, Color.BLACK)
     private val iceTileTextures = Texture("titles/ice_tile.png")
     private val bombTileTextures = Texture("titles/bomb.png")
@@ -173,6 +174,31 @@ class Board(val size: Int) {
             }
         }
         return false
+    }
+    fun hasVirus(): Boolean {
+        for (r in 0 until size) {
+            for (c in 0 until size) {
+                if (grid[r][c].value == TILE_VIRUS) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    fun MakeVirus() {
+        for (r in 0 until size) {
+            for (c in 0 until size) {
+                if (grid[r][c].value >0&&grid[r][c].frozen<0) {
+                    grid[r][c].value = TILE_VIRUS
+                    grid[r][c].frozen = 0
+                    grid[r][c].isBoom = false
+                    grid[r][c].isThunder = false
+                    grid[r][c].boomCounter = 0
+                    grid[r][c].thunderCounter = 0
+                    return
+                }
+            }
+        }
     }
     //Lấy tile khi click vào
     fun getTileAt(x: Float, y: Float): Pair<Int, Int>? {
@@ -331,7 +357,8 @@ fun setTile(r: Int, c: Int, tile: Tile) {
         for (r in 0 until size) {
             for (c in 0 until size) {
                 val v = grid[r][c]
-                if (v.value <= 0) continue // bỏ qua ô trống và tường
+
+                if (v.value == TILE_WALL) continue // bỏ qua ô trống và tường
 
                 if (spawnAnimations.any { it.row == r && it.col == c }) continue
                 if (animations.any { it.toR == r && it.toC == c }) continue
@@ -349,7 +376,13 @@ fun setTile(r: Int, c: Int, tile: Tile) {
                 }
 
                 val offset = tileSize * (1 - scale) / 2
-                tileImages[v.value]?.let { batch.draw(it, dx + offset, dy + offset, tileSize * scale, tileSize * scale) }
+                if(v.value==TILE_VIRUS){
+
+                    batch.draw(virusTexture, dx + offset, dy + offset, tileSize * scale, tileSize * scale)
+                }else{
+                    tileImages[v.value]?.let { batch.draw(it, dx + offset, dy + offset, tileSize * scale, tileSize * scale) }
+               }
+
                 // nếu bị đóng băng thì vẽ overlay màu xanh nhạt
                 if (v.frozen > 0) {
                     // Vẽ băng với alpha 0.7

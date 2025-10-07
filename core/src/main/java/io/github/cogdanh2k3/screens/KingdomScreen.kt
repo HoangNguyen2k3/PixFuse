@@ -3,6 +3,7 @@ package io.github.cogdanh2k3.screens
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Screen
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.scenes.scene2d.Stage
@@ -35,9 +36,24 @@ class KingdomScreen(private val game: Main) : Screen {
         Gdx.input.inputProcessor = stage
 
         // --- Background ---
-        val bg = Image(Texture("BG/background.png"))
-        bg.setFillParent(true)
+        val bgTexture = Texture("BG/background.png")
+        val bg = Image(bgTexture)
+        bg.setSize(stage.viewport.worldWidth, stage.viewport.worldHeight) // Bao phủ toàn màn
+        bg.setPosition(0f, 0f)
         stage.addActor(bg)
+
+        // --- Nút quay về menu (ở góc trên trái) ---
+        val backTex = Texture("UI/backButton.png") // icon back
+        val backBtn = Image(backTex)
+        backBtn.setSize(150f, 150f)
+        backBtn.setPosition(30f, stage.viewport.worldHeight - backBtn.height - 30f) // góc trên trái
+
+        backBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.setScreen(ModeSelectScreen(game)) // ← chuyển về menu
+            }
+        })
+        stage.addActor(backBtn)
 
         // --- Load danh sách Kingdom ---
         val kingdoms = KingdomDatabase.kingdoms
@@ -50,18 +66,15 @@ class KingdomScreen(private val game: Main) : Screen {
             val island = Image(Texture(kingdom.islandImage))
             island.setSize(islandSize.first, islandSize.second)
 
-            // Lệch trái/phải xen kẽ
             val offsetX = if (index % 2 == 0) -offsetXAmount else offsetXAmount
             val posX = stage.width / 2f - island.width / 2f + offsetX
             val posY = startY - index * spacingY
             island.setPosition(posX, posY)
 
-            // Lưu lại tâm để vẽ line sau
             val centerX = posX + island.width / 2f
             val centerY = posY + island.height / 2f
             islandCenters.add(centerX to centerY)
 
-            // --- Tên đảo ---
             val nameLabel = Label(
                 kingdom.name,
                 Label.LabelStyle(FontUtils.loadCustomFont(28), Color.WHITE)
@@ -71,7 +84,6 @@ class KingdomScreen(private val game: Main) : Screen {
             nameLabel.setPosition(posX, island.y - 50f)
 
             if (index > currentUnlockedIndex) {
-                // Đảo bị khóa
                 island.color = Color(0.3f, 0.3f, 0.3f, 0.8f)
                 val lock = Image(Texture("UI/lock_icon.png"))
                 lock.setSize(100f, 100f)
@@ -82,7 +94,6 @@ class KingdomScreen(private val game: Main) : Screen {
                 stage.addActor(island)
                 stage.addActor(lock)
             } else {
-                // Đảo mở khóa → hiệu ứng và cho phép click
                 island.setOrigin(Align.center)
                 island.addAction(
                     Actions.forever(
@@ -101,8 +112,8 @@ class KingdomScreen(private val game: Main) : Screen {
                             hp = bossData.hp,
                             texturePath = bossData.texturePath
                         )
-                        val mode = BattleMode(boss, bossData.turnAttackBoss,index)
-                        game.screen = GameScreen(game, mode,null,index+1)
+                        val mode = BattleMode(boss, bossData.turnAttackBoss, index)
+                        game.screen = GameScreen(game, mode, null, index + 1)
                     }
                 })
                 stage.addActor(island)
@@ -112,7 +123,10 @@ class KingdomScreen(private val game: Main) : Screen {
         }
     }
 
+
     override fun render(delta: Float) {
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
         // --- Update stage ---
         stage.act(delta)
 

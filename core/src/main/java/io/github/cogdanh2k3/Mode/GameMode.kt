@@ -14,6 +14,7 @@ import io.github.cogdanh2k3.DataGame.DataGame
 import io.github.cogdanh2k3.audio.SoundId
 import io.github.cogdanh2k3.audio.SoundManager
 import io.github.cogdanh2k3.game.Board
+import io.github.cogdanh2k3.game.Tile
 import io.github.cogdanh2k3.ui.BossUI
 import kotlin.random.Random
 
@@ -241,7 +242,22 @@ class BattleMode(
 
     override fun specialEffect() {}
     override fun checkWin(board: Board, score: Int): Boolean = boss.isDefeated()
-    override fun checkLose(board: Board, score: Int): Boolean = remainingMoves <= 0 && !boss.isDefeated()
+    override fun checkLose(board: Board, score: Int): Boolean
+    {
+        if (remainingMoves <= 0 && !boss.isDefeated()){
+            return true
+        }else{
+            for (r in 0 until board.size) {
+                for (c in 0 until board.size) {
+                    val v = board.getTile(r, c)
+                    if (r + 1 < board.size && v == board.getTile(r + 1, c)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+                    if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+                }
+            }
+            return true
+        }
+        return false
+    }
 
     override fun getTargetDescription(): String {
         return "${boss.name}: ${boss.currentHP}/${boss.hp} HP  |  Lượt: $remainingMoves"
@@ -345,20 +361,37 @@ class BattleMode(
     private fun triggerBossReaction(board: Board, stage: Stage, type: String) {
         val random = Random.nextFloat()
         when {
-            random < 0.5f -> { // 50% hồi máu
+            random < 0.4f -> { // 50% hồi máu
                 val healPercent = if (type == "mid") 0.2f else 0.4f
                 val healAmount = (boss.hp * healPercent).toInt()
                 boss.currentHP = (boss.currentHP + healAmount).coerceAtMost(boss.hp)
                 showFloatingText(stage, "+${healAmount} HP", Color.GREEN)
                 println("💚 Boss hồi $healAmount HP!")
             }
-            else -> { // 50% spawn bom
+            random < 0.6f -> { // 50% hồi máu
                 val emptyCells = board.getEmptyCells()
                 if (emptyCells.isNotEmpty()) {
+                    //val (r, c) = board.getEmptyCells().randomOrNull() ?: return
+                    //board.setTile(r, c, Tile(-3))
+                    //board.addSpawnAnim(r, c, -3)
                     val spawnCount = (emptyCells.size / 2).coerceAtMost(6)
                     board.spawnBoomTiles(spawnCount)
                     showFloatingText(stage, "💣 Boss summoned $spawnCount bombs!", Color.ORANGE)
                     println("💣 Boss triệu hồi $spawnCount boom tiles!")
+                    //showFloatingText(stage, "Boss summoned virus!", Color.ORANGE)
+                }
+        }
+            else -> { // 50% spawn bom
+                val emptyCells = board.getEmptyCells()
+                if (emptyCells.isNotEmpty()) {
+                    val (r, c) = board.getEmptyCells().randomOrNull() ?: return
+                    board.setTile(r, c, Tile(-3))
+                    board.addSpawnAnim(r, c, -3)
+                    //val spawnCount = (emptyCells.size / 2).coerceAtMost(6)
+                    //board.spawnBoomTiles(spawnCount)
+                    //showFloatingText(stage, "💣 Boss summoned $spawnCount bombs!", Color.ORANGE)
+                    //println("💣 Boss triệu hồi $spawnCount boom tiles!")
+                    showFloatingText(stage, "Boss summoned virus!", Color.ORANGE)
                 }
             }
         }

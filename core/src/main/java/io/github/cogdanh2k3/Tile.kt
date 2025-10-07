@@ -9,7 +9,7 @@ data class Tile(
     var isBoom: Boolean = false, // true = có bom, false = không có bom
     var boomCounter: Int = 0,
     var isThunder: Boolean = false, // ⚡ Thunder tile đặc biệt
-    var thunderCounter: Int = 0     // đếm ngược như boom, khi = 0 thì nổ buff
+    var thunderCounter: Int = 0
 )
 /*
 class Tile(
