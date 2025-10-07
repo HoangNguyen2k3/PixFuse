@@ -343,7 +343,12 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
 
     private fun updateGame(delta: Float) {
         if(mode is TimedMode){
-            manager.update()
+            //manager.update()
+            val newScore = manager.score
+            if (newScore > score) {
+                scoreAnimation = 1f
+                score = newScore
+            }
         }
         if (mode is BattleMode) {
             manager.bossUI.updateUI()

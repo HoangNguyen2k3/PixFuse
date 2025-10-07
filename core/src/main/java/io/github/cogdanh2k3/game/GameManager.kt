@@ -252,6 +252,8 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
                     if (newBoom <= 0) {
                         // nổ khi hết counter
                         explode(r, c)
+                        SoundManager.playVibration(200)
+                        SoundManager.playSfx(SoundId.BOMB)
                     } else {
                         board.setTile(r, c, t.copy(boomCounter = newBoom))
                     }
@@ -337,7 +339,7 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
 
         board.addExplosionBoom(r, c)
         SoundManager.playVibration(300)
-        SoundManager.playSfx(SoundId.BOMB)
+
     }
 
     private fun processLine(
