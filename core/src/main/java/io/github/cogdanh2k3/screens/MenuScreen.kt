@@ -74,6 +74,7 @@ class MenuScreen(val game: Main) : Screen {
         val settingsButton = TextButton("SETTINGS", skin)
         val exitButton = TextButton("EXIT", skin)
         val leaderboardButton = TextButton("LEADERBOARD", skin)
+        val storyButton = TextButton("STORY", skin)
         playButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 Timer.schedule(object : Timer.Task() {
@@ -95,6 +96,11 @@ class MenuScreen(val game: Main) : Screen {
                 game.screen = LeaderboardScreen(game)
             }
         })
+        storyButton.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.screen = MainStoryScreenclass(game)
+            }
+        })
         exitButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 Timer.schedule(object : Timer.Task() {
@@ -110,6 +116,7 @@ class MenuScreen(val game: Main) : Screen {
         table.add(playButton).pad(20f).width(400f).height(100f).row() // Tăng kích thước
         table.add(settingsButton).pad(20f).width(400f).height(100f).row()
         table.add(leaderboardButton).pad(20f).width(400f).height(100f).row()
+        table.add(storyButton).pad(20f).width(400f).height(100f).row()
         table.add(exitButton).pad(20f).width(400f).height(100f).row()
     }
 

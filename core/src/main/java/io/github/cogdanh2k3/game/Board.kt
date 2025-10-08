@@ -146,6 +146,10 @@ class Board(val size: Int) {
             grid[pair.first][pair.second].value = TILE_WALL
         }
     }
+    fun InitGridWallCreateMode() {
+        grid[1][1].value = TILE_WALL
+        grid[3][3].value = TILE_WALL
+    }
     fun spawnBoomTiles( temp: Int){
         var temp1 : Int = temp
         for (r in 0 until size) {

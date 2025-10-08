@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.files.FileHandle
 import com.badlogic.gdx.utils.Json
 import com.badlogic.gdx.utils.JsonWriter
+import kotlin.Int
+import kotlin.String
 
 object SaveManager {
     private const val SAVE_FILE = "gameSave.json"
@@ -107,7 +109,15 @@ object SaveManager {
             numbooster1 = 10,
             numbooster2 = 10,
             numbooster3 = 10,
-            numbooster4 = 10
+            numbooster4 = 10,
+            gridRowCreativeMode = 4,
+            gridColumnCreativeMode = 4,
+            trapBoomCreativeMode = 0,
+            trapWallCreativeMode = 0,
+            trapIceCreativeMode = 0,
+            trapThunderCreativeMode = 0,
+            spawnTileRateCreativeMode = 1,
+            themeCreativeMode = "Pikachu",
         )
 
         Gdx.app.log("SaveManager", "✅ GameSave mặc định đã được tạo.")

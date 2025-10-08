@@ -3,8 +3,11 @@ package io.github.cogdanh2k3.game
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.utils.Timer
+import io.github.cogdanh2k3.DataGame.IntPair
 import io.github.cogdanh2k3.DataGame.LevelData
+import io.github.cogdanh2k3.DataGame.SaveManager
 import io.github.cogdanh2k3.Mode.BattleMode
+import io.github.cogdanh2k3.Mode.CreativeMode
 import io.github.cogdanh2k3.Mode.GameMode
 import io.github.cogdanh2k3.Mode.TimedMode
 import io.github.cogdanh2k3.audio.SoundId
@@ -31,6 +34,25 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
     public lateinit var bossUI: BossUI
     lateinit var stage: Stage
     fun InitData(){
+        if(mode is CreativeMode){
+            val temp_theme = when (SaveManager.gameSave.themeCreativeMode) {
+                "Pikachu" -> 1
+                "PVZ" -> 2
+                "Doraemon" -> 3
+                "MemeCat" -> 4
+                "DragonBall" -> 5
+                else -> 1 // giá trị mặc định
+            }
+            //if(levelData != null && levelData.id != -1){
+                board.tileImages = mode.data.themes[temp_theme-1].images
+                //levelData.sizeBoard = SaveManager.gameSave.gridRowCreativeMode
+                    //}
+
+            if (Random.nextFloat() <(SaveManager.gameSave.trapWallCreativeMode/100f).toFloat()){
+                board.InitGridWallCreateMode()
+            }
+            return
+        }
         if(levelData != null && levelData.id != -1){
             board.tileImages = mode.data.themes[levelData.currentWorld-1].images
             board.LEVEL_WALLS=levelData.wallData
@@ -74,7 +96,62 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
         com.badlogic.gdx.Gdx.app.log("spawnTile", "skipping spawn: cell not empty at $r,$c")
         return
     }
+if(mode is CreativeMode){
+    var value:Int = 2
+    if(SaveManager.gameSave.spawnTileRateCreativeMode==1){
+        if (Random.nextFloat() < 0.9f){
+            value = 2
+        }else{
+            value = 4
+        }
+    }else if(SaveManager.gameSave.spawnTileRateCreativeMode==2){
+        if (Random.nextFloat() < 0.9f){
+            value = 4
+        }else{
+            value = 8
+        }
+    }else if(SaveManager.gameSave.spawnTileRateCreativeMode==3){
+        if (Random.nextFloat() < 0.9f)
+        {
+            value = 8
+        }else
+        {
+            value = 16
+        }
+    }
 
+    val p = Random.nextFloat()
+    val boomRate: Float = SaveManager.gameSave.trapBoomCreativeMode.toFloat() / 100f
+    val frozenRate: Float = SaveManager.gameSave.trapIceCreativeMode.toFloat() / 100f
+    val thunderRate: Float = SaveManager.gameSave.trapThunderCreativeMode.toFloat() / 100f
+      when {
+        p < boomRate -> {
+            // BOOM (10%)
+            val tile = Tile(value = value, frozen = 0, isBoom = true, boomCounter = 3,isThunder = false, thunderCounter = 0)
+            board.setTile(r, c, tile)
+            board.addSpawnAnim(r, c, value)
+        }
+        p < (boomRate + frozenRate) -> {
+            // FROZEN (20%)
+            val tile = Tile(value = value, frozen = 3, isBoom = false, boomCounter = 0, isThunder = false, thunderCounter = 0)
+            board.setTile(r, c, tile)
+            board.addSpawnAnim(r, c, value)
+        }
+        p < (boomRate + frozenRate+thunderRate) -> {
+            // FROZEN (20%)
+            val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0,isThunder = true, thunderCounter = 3)
+            board.setTile(r, c, tile)
+            board.addSpawnAnim(r, c, value)
+        }
+        else -> {
+            // NORMAL
+            val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0,isThunder = false, thunderCounter = 0)
+            board.setTile(r, c, tile)
+            board.addSpawnAnim(r, c, value)
+        }
+    }
+    return
+}
     val value = if (Random.nextFloat() < 0.9f) 2 else 4
     val p = Random.nextFloat()
 
@@ -340,7 +417,6 @@ class GameManager(val board: Board, val mode: GameMode, val levelData: LevelData
 
         board.addExplosionBoom(r, c)
         SoundManager.playVibration(300)
-
     }
 
     private fun processLine(

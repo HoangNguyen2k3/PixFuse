@@ -16,7 +16,16 @@ data class GameSave(
     var numbooster1:Int = 0,
     var numbooster2:Int = 0,
     var numbooster3:Int = 0,
-    var numbooster4:Int = 0
+    var numbooster4:Int = 0,
+    //creative mode
+    var gridRowCreativeMode: Int = 4,
+    var gridColumnCreativeMode: Int = 4,
+    var trapBoomCreativeMode: Int = 0,
+    var trapWallCreativeMode: Int = 0,
+    var trapIceCreativeMode: Int = 0,
+    var trapThunderCreativeMode: Int = 0,
+    var spawnTileRateCreativeMode: Int = 1,
+    var themeCreativeMode:String = "Pikachu"
 ) {
     fun addScore(score: Int) {
         if (!list_high_score.contains(score)) {

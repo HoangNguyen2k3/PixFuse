@@ -41,6 +41,7 @@ import io.github.cogdanh2k3.ui.BoosterMessage
 import io.github.cogdanh2k3.ui.BossUI
 import io.github.cogdanh2k3.ui.HelpPopup
 import com.badlogic.gdx.scenes.scene2d.ui.Label
+import io.github.cogdanh2k3.Mode.CreativeMode
 
 class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? = null,val indexBossNext: Int? = 1) : ScreenAdapter() {
     public var BOARD_SIZE = if(levelData==null){4}else{levelData.sizeBoard}
@@ -77,7 +78,13 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
     }
 
     // Game objects
-    var board = Board(BOARD_SIZE)
+    var board =  if(mode is CreativeMode){
+        //BOARD_SIZE = SaveManager.gameSave.gridRowCreativeMode
+         Board(SaveManager.gameSave.gridRowCreativeMode)
+    }else{
+
+        Board(BOARD_SIZE)
+    }
     private val manager = GameManager(board,mode,levelData)
 
     private var score = 0
@@ -121,6 +128,9 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         val prefs = Gdx.app.getPreferences("PicFusePrefs")
         highScore = prefs.getInteger("highscore", 0)
         displayHighScore = highScore.toFloat()
+if(mode is CreativeMode){
+    BOARD_SIZE = SaveManager.gameSave.gridRowCreativeMode
+}
 
         setupBoard()
     }

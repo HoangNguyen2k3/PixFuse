@@ -439,4 +439,36 @@ class BattleMode(
         println("💀 Thua! Hết lượt, boss ${boss.name} còn ${boss.currentHP} HP.")
     }
 }
+class CreativeMode : GameMode {
+    override val name: String = "CreativeMode"
+    override val data: DataGame = DataGame()
+    override fun checkWin(board: Board, score: Int): Boolean {
+        // Endless không có win
+        return false
+    }
 
+    override fun specialEffect() {
+    }
+    override fun init() {
+    }
+    override fun checkLose(board: Board, score: Int): Boolean {
+        // Lose khi không còn ô trống và không merge được
+        val hasUsableEmpty = board.getEmptyCells().any { (r, c) ->
+            val tile = board.getTile(r, c)
+            tile.frozen <= 0   // ô trống usable nếu frozen <= 0
+        }
+        if (hasUsableEmpty) return false  // còn ít nhất 1 ô trống usable → chưa thua
+        for (r in 0 until board.size) {
+            for (c in 0 until board.size) {
+                val v = board.getTile(r, c)
+                if (r + 1 < board.size && v == board.getTile(r + 1, c)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+                if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+            }
+        }
+        return true
+    }
+
+    override fun getTargetDescription(): String {
+        return "Creative Mode" // Hiển thị vô cực
+    }
+}

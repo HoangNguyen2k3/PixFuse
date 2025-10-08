@@ -23,6 +23,7 @@ import io.github.cogdanh2k3.Main
 import io.github.cogdanh2k3.Mode.BattleMode
 import io.github.cogdanh2k3.Mode.EndlessMode
 import io.github.cogdanh2k3.Mode.TimedMode
+import io.github.cogdanh2k3.screens.GamePlay.CreativeModeScreen
 import io.github.cogdanh2k3.screens.GamePlay.GameScreen
 import io.github.cogdanh2k3.utils.FontUtils
 
@@ -69,6 +70,13 @@ class ModeSelectScreen(val game: Main) : Screen {
             upColor = Color(0.7f, 0.2f, 0.5f, 1f),    // tím đỏ nhạt khi bình thường
             overColor = Color(0.8f, 0.3f, 0.6f, 0.95f), // tím đỏ nổi bật khi hover
             downColor = Color(0.6f, 0.1f, 0.4f, 0.95f), // tím đỏ đậm khi nhấn
+            font = font,
+            fontColor = Color.WHITE
+        )
+        val creativeStyle = createButtonStyle(
+            upColor = Color(1f, 0.84f, 0f, 1f),     // vàng gold
+            overColor = Color(1f, 0.9f, 0.2f, 0.95f), // vàng sáng hơn khi hover
+            downColor = Color(0.9f, 0.7f, 0f, 0.95f), // cam-vàng đậm khi nhấn
             font = font,
             fontColor = Color.WHITE
         )
@@ -127,21 +135,17 @@ class ModeSelectScreen(val game: Main) : Screen {
         val battleButton = TextButton("BATTLE MODE", battleStyle).apply {
             addListener(object : ClickListener() {
                 override fun clicked(event: InputEvent?, x: Float, y: Float) {
-/*                    val bossData = BossDatabase.getBossForLevel(SaveManager.gameSave.int_levelBoss)
-                    val boss = Boss(
-                        name = bossData.name,
-                        hp = bossData.hp,
-                        texturePath = bossData.texturePath
-                    )
-                    val mode = BattleMode(boss,bossData.turnAttackBoss)
-
-                    // TODO: Thay bằng BattleMode thực tế sau
-                    game.screen = GameScreen(game, mode)*/
                     game.screen = KingdomScreen(game)
                 }
             })
         }
-
+        val creativeButton = TextButton("CREATIVE MODE", creativeStyle).apply {
+            addListener(object : ClickListener() {
+                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                    game.screen = CreativeModeScreen(game)
+                }
+            })
+        }
         val mode4Button = TextButton("MODE 5 (LOCK)", lockedStyle).apply { isDisabled = true }
 
         // Sắp xếp UI
@@ -155,6 +159,7 @@ class ModeSelectScreen(val game: Main) : Screen {
         root.add(endlessButton).colspan(2).width(1000f).height(200f).pad(40f).row()
         root.add(timedButton).colspan(2).width(1000f).height(200f).pad(40f).row()
         root.add(battleButton).colspan(2).width(1000f).height(200f).pad(40f).row() // 👈 thêm nút ở đây
+        root.add(creativeButton).colspan(2).width(1000f).height(200f).pad(40f).row()
         root.add(mode4Button).colspan(2).width(1000f).height(200f).pad(40f).row()
     }
 
