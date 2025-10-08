@@ -119,7 +119,16 @@ if(mode is CreativeMode){
             value = 16
         }
     }
-
+    val hasUsableEmpty = board.getEmptyCells().any { (r, c) ->
+        val tile = board.getTile(r, c)
+        tile.frozen <= 0   // ô trống usable nếu frozen <= 0
+    }
+    if(!hasUsableEmpty){
+        val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0,isThunder = false, thunderCounter = 0)
+        board.setTile(r, c, tile)
+        board.addSpawnAnim(r, c, value)
+        return
+    }
     val p = Random.nextFloat()
     val boomRate: Float = SaveManager.gameSave.trapBoomCreativeMode.toFloat() / 100f
     val frozenRate: Float = SaveManager.gameSave.trapIceCreativeMode.toFloat() / 100f
@@ -154,7 +163,16 @@ if(mode is CreativeMode){
 }
     val value = if (Random.nextFloat() < 0.9f) 2 else 4
     val p = Random.nextFloat()
-
+        val hasUsableEmpty = board.getEmptyCells().any { (r, c) ->
+            val tile = board.getTile(r, c)
+            tile.frozen <= 0   // ô trống usable nếu frozen <= 0
+        }
+        if(!hasUsableEmpty){
+            val tile = Tile(value = value, frozen = 0, isBoom = false, boomCounter = 0,isThunder = false, thunderCounter = 0)
+            board.setTile(r, c, tile)
+            board.addSpawnAnim(r, c, value)
+            return
+        }
     when {
         p < 0.10f -> {
             // BOOM (10%)
@@ -375,10 +393,10 @@ if(mode is CreativeMode){
         for (i in 0 until board.size) {
             if (i == r) continue
             val tile = board.getTile(i, c)
-            if (tile.value > 0 && tile.value != TILE_WALL) {
-                toDouble.add(i to c)
+            if (tile.value > 0&& tile.value != TILE_WALL&&tile.value != TILE_VIRUS) {
+               toDouble.add(i to c)
             }
-            if(tile.value!=TILE_WALL){
+            if(tile.value!=TILE_WALL&&tile.value != TILE_VIRUS){
                 board.addExplosionThunder(i, c)
             }
         }
@@ -386,8 +404,8 @@ if(mode is CreativeMode){
         // --- Nhân giá trị thật ---
         for ((rr, cc) in toDouble) {
             val t = board.getTile(rr, cc)
-            val newVal = t.value * 2
-            board.setTile(rr, cc, t.copy(value = newVal))
+            t.value *= 2
+            board.setTile(rr, cc, t)
 
         }
 
@@ -425,7 +443,7 @@ if(mode is CreativeMode){
         index: Int,
         isRow: Boolean
     ): List<Tile> {
-
+        val pendingThunder = mutableListOf<Pair<Int, Int>>()
         val work = if (reversed) line.reversed() else line
         val final = work.map { it.copy() }.toMutableList()
 
@@ -518,16 +536,21 @@ if(mode is CreativeMode){
                 if (action.merged) {
                     SoundManager.playVibration(100)
                     board.addExplosion(index, toC)
-                    board.addMergeAnim(index, toC, action.value * 2)
-                    SoundManager.playSfx(SoundId.MERGE)
-                    mode.specialEffect()
-if(mode is BattleMode){
-    processInBattleMode(stage, index, toC)
-}
-                    // Nếu merge này bao gồm thunder => trigger thunder buff tại ô merge (index,toC)
                     if (action.isThunderMerged) {
                         triggerThunderBuff(index, toC)
                     }
+                    board.addMergeAnim(index, toC, action.value * 2)
+                    SoundManager.playSfx(SoundId.MERGE)
+                    mode.specialEffect()
+                    if(mode is BattleMode){
+                        processInBattleMode(stage, index, toC)
+                    }
+                    // Nếu merge này bao gồm thunder => trigger thunder buff tại ô merge (index,toC)
+/*                    if (action.isThunderMerged) {
+                        triggerThunderBuff(index, toC)
+                        board.setTile(index, toC, Tile(action.value * 2, 0, isThunder = true))
+                        pendingThunder.add(index to toC)
+                    }*/
                     checkVirusTile()
                 }
             } else {
@@ -538,15 +561,22 @@ if(mode is BattleMode){
                 if (action.merged) {
                     SoundManager.playVibration(100)
                     board.addExplosion(toR, index)
+                    if (action.isThunderMerged) {
+                        triggerThunderBuff(toR, index)
+                    }
                     board.addMergeAnim(toR, index, action.value * 2)
                     SoundManager.playSfx(SoundId.MERGE)
                     mode.specialEffect()
                     if(mode is BattleMode){
                         processInBattleMode(stage, toR, index)
                     }
-                    if (action.isThunderMerged) {
+/*                    if (action.isThunderMerged) {
                         triggerThunderBuff(toR, index)
-                    }
+                    }*/
+/*                    if (action.isThunderMerged) {
+                        board.setTile(toR, index, Tile(action.value * 2, 0, isThunder = true))
+                        pendingThunder.add(toR to index)
+                    }*/
                     checkVirusTile()
                 }
             }
@@ -554,6 +584,10 @@ if(mode is BattleMode){
         if (mode is BattleMode) {
             mode.applyQueuedDamages(board, stage, bossUI)
         }
+        for ((r, c) in pendingThunder) {
+            triggerThunderBuff(r, c)
+        }
+        pendingThunder.clear()
         return output
     }
     fun processInBattleMode(stage: Stage, r: Int, c: Int) {

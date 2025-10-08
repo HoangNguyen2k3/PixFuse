@@ -72,7 +72,9 @@ class WinScreen(
     private val fireworks = mutableListOf<Firework>()
 
     override fun show() {
-        SaveManager.gameSave.addScore(score)
+        if(mode is TargetMode){
+            SaveManager.gameSave.addScore(score)
+        }
         if(mode is BattleMode){
           //  if(SaveManager.gameSave.int_levelBoss<4){
                 SaveManager.gameSave.int_levelBoss++;

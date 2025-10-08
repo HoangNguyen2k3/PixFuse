@@ -126,7 +126,7 @@ class GameScreen(val game: Main, val mode: GameMode, val levelData: LevelData? =
         Gdx.input.inputProcessor = gestureDetector
 
         val prefs = Gdx.app.getPreferences("PicFusePrefs")
-        highScore = prefs.getInteger("highscore", 0)
+        highScore = SaveManager.gameSave.list_high_score[0]
         displayHighScore = highScore.toFloat()
 if(mode is CreativeMode){
     BOARD_SIZE = SaveManager.gameSave.gridRowCreativeMode

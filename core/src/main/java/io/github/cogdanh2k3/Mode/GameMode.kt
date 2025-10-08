@@ -14,6 +14,7 @@ import io.github.cogdanh2k3.DataGame.DataGame
 import io.github.cogdanh2k3.audio.SoundId
 import io.github.cogdanh2k3.audio.SoundManager
 import io.github.cogdanh2k3.game.Board
+import io.github.cogdanh2k3.game.TILE_VIRUS
 import io.github.cogdanh2k3.game.Tile
 import io.github.cogdanh2k3.ui.BossUI
 import kotlin.random.Random
@@ -51,7 +52,7 @@ class EndlessMode : GameMode {
             for (c in 0 until board.size) {
                 val v = board.getTile(r, c)
                 if (r + 1 < board.size && v == board.getTile(r + 1, c)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
-                if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+                if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r, c+1).frozen<=0)) return false
             }
         }
         return true
@@ -125,7 +126,7 @@ override fun checkLose(board: Board, score: Int): Boolean {
         for (c in 0 until board.size) {
             val v = board.getTile(r, c)
             if (r + 1 < board.size && v == board.getTile(r + 1, c)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
-            if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+            if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r, c+1).frozen<=0)) return false
         }
     }
     return true
@@ -250,8 +251,8 @@ class BattleMode(
             for (r in 0 until board.size) {
                 for (c in 0 until board.size) {
                     val v = board.getTile(r, c)
-                    if (r + 1 < board.size && v == board.getTile(r + 1, c)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
-                    if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+                    if (r + 1 < board.size && v == board.getTile(r + 1, c)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)&&(v.value!= TILE_VIRUS && board.getTile(r + 1, c).value!= TILE_VIRUS)) return false
+                    if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r, c+1).frozen<=0)&&(v.value!= TILE_VIRUS && board.getTile(r, c+1).value!= TILE_VIRUS)) return false
                 }
             }
             return true
@@ -462,7 +463,7 @@ class CreativeMode : GameMode {
             for (c in 0 until board.size) {
                 val v = board.getTile(r, c)
                 if (r + 1 < board.size && v == board.getTile(r + 1, c)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
-                if (c + 1 < board.size && v == board.getTile(r, c + 1)&&(v.frozen<=0&&board.getTile(r + 1, c).frozen<=0)) return false
+                if (c + 1 < board.size && v == board.getTile(r, c + 1)&&((v.frozen<=0&&board.getTile(r, c+1).frozen<=0))) return false
             }
         }
         return true
